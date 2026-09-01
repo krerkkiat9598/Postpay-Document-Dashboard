@@ -1,20 +1,62 @@
-const DATA=window.POSTPAY_DATA||[];const $=id=>document.getElementById(id);const pct=x=>(x*100).toFixed(1)+'%';const fmt=x=>Number(x||0).toLocaleString('en-US');
-function vals(key){return [...new Set(DATA.map(d=>d[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'th'))}
-function fillSelect(id,key){const s=$(id);s.innerHTML='<option value="">All</option>'+vals(key).map(v=>`<option>${esc(v)}</option>`).join('')}
+const DATA=window.POSTPAY_DATA||[];
+const $=id=>document.getElementById(id);
+const pct=x=>(x*100).toFixed(1)+'%';
+const fmt=x=>Number(x||0).toLocaleString('en-US');
+
+function vals(key, rows=DATA){
+  return [...new Set(rows.map(d=>d[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'th'));
+}
+function fillSelect(id,key,rows=DATA,placeholder='All'){
+  const s=$(id); if(!s) return;
+  const current=s.value;
+  s.innerHTML='<option value="">'+placeholder+'</option>'+vals(key,rows).map(v=>`<option value="${escAttr(v)}">${esc(v)}</option>`).join('');
+  if(vals(key,rows).includes(current)) s.value=current; else s.value='';
+}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-[['fMonth','month'],['fRegion','region'],['fChannel','channel'],['fOrder','order_type'],['fShop','shop']].forEach(x=>fillSelect(...x));
-function filtered(){const fs={month:$('fMonth').value,region:$('fRegion').value,channel:$('fChannel').value,order_type:$('fOrder').value,shop:$('fShop').value};return DATA.filter(d=>Object.entries(fs).every(([k,v])=>!v||d[k]===v))}
+function escAttr(s){return esc(s)}
+
+// Cascading filters: Month -> Region -> Channel / Order Type / Shop.
+// Channel, Order Type and Shop are always populated from the currently selected Region
+// (and Month, when selected), so users only see valid choices for that scope.
+function rowsBefore(key){
+  const month=$('fMonth')?.value||'';
+  const region=$('fRegion')?.value||'';
+  return DATA.filter(d=>(!month||d.month===month)&&(!region||d.region===region));
+}
+function refreshDependentFilters(changed=''){
+  const base=rowsBefore();
+  fillSelect('fChannel','channel',base,'All');
+  fillSelect('fOrder','order_type',base,'All');
+  fillSelect('fShop','shop',base,'All');
+}
+
+fillSelect('fMonth','month',DATA,'All');
+fillSelect('fRegion','region',DATA,'All');
+refreshDependentFilters();
+
+function filtered(){
+  const fs={month:$('fMonth').value,region:$('fRegion').value,channel:$('fChannel').value,order_type:$('fOrder').value,shop:$('fShop').value};
+  return DATA.filter(d=>Object.entries(fs).every(([k,v])=>!v||d[k]===v));
+}
 function group(arr,key){const m={};arr.forEach(d=>(m[d[key]]??=[]).push(d));return m}
 function metrics(a){const t=a.length,c=a.reduce((s,d)=>s+d.is_complete,0),i=t-c,x=a.reduce((s,d)=>s+d.is_xflag,0);return{t,c,i,x,cr:t?c/t:0,ir:t?i/t:0}}
 function bars(el,items,max=null){if(!items.length){el.innerHTML='<div style="color:#6c7f91;padding:30px">No data</div>';return}max=max||Math.max(...items.map(x=>x.value),1);el.innerHTML=items.map((x,i)=>`<div class="bar-row ${i===0&&x.hot!==false?'hot':''}" title="${esc(x.label)}"><div class="bar-label">${esc(x.label)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(1,x.value/max*100)}%"></div></div><div class="bar-val">${x.display}</div></div>`).join('')}
 function trend(el,a){const g=group(a,'month'),order=["July'26","Aug'26"].filter(x=>g[x]);const pts=order.map((k,i)=>{const m=metrics(g[k]);return{k,label:k.replace("'26",''),v:m.cr}});if(!pts.length){el.innerHTML='No data';return}const W=620,H=220,pad=40,min=.85,max=1.0;const xy=pts.map((p,i)=>({x:pts.length===1?W/2:pad+i*(W-2*pad)/(pts.length-1),y:H-pad-(p.v-min)/(max-min)*(H-2*pad),...p}));let svg=`<svg viewBox="0 0 ${W} ${H}">`;[.85,.90,.95,1].forEach(v=>{const y=H-pad-(v-min)/(max-min)*(H-2*pad);svg+=`<line class="axis" x1="${pad}" y1="${y}" x2="${W-pad}" y2="${y}"/><text class="svg-label" x="5" y="${y+4}">${pct(v)}</text>`});if(xy.length>1)svg+=`<polyline class="trend-line" points="${xy.map(p=>p.x+','+p.y).join(' ')}"/>`;xy.forEach(p=>svg+=`<circle class="dot" cx="${p.x}" cy="${p.y}" r="6"/><text class="svg-value" x="${p.x}" y="${p.y-14}" text-anchor="middle">${pct(p.v)}</text><text class="svg-label" x="${p.x}" y="${H-9}" text-anchor="middle">${esc(p.label)}</text>`);svg+='</svg>';el.innerHTML=svg}
 function shopRows(a,minVol=50,limit=10){const g=group(a,'shop');return Object.entries(g).map(([name,rows])=>({name,...metrics(rows)})).filter(x=>x.t>=minVol).sort((a,b)=>b.ir-a.ir||b.t-a.t).slice(0,limit)}
 function table(el,rows,limit=10){el.innerHTML=`<table class="table"><thead><tr><th>Shop</th><th class="num">Total</th><th class="num">Incomplete</th><th class="num">Inc. %</th></tr></thead><tbody>${rows.slice(0,limit).map(r=>`<tr><td class="shop-name" title="${esc(r.name)}">${esc(r.name)}</td><td class="num">${fmt(r.t)}</td><td class="num">${fmt(r.i)}</td><td class="num rate-bad">${pct(r.ir)}</td></tr>`).join('')||'<tr><td colspan="4">No shops meet volume threshold</td></tr>'}</tbody></table>`}
-function update(){const a=filtered(),m=metrics(a);$('kTotal').textContent=fmt(m.t);$('kComplete').textContent=pct(m.cr);$('kCompleteCount').textContent=fmt(m.c)+' complete';$('kIncomplete').textContent=pct(m.ir);$('kIncompleteCount').textContent=fmt(m.i)+' incomplete';$('kXFlag').textContent=pct(m.t?m.x/m.t:0);$('kXCount').textContent=fmt(m.x)+' X Flag';$('kGap').textContent='Gap '+((m.cr-.95)*100).toFixed(1)+' ppt vs target';trend($('trendChart'),a);
+function update(){const a=filtered(),m=metrics(a);$('kTotal').textContent=fmt(m.t);$('kComplete').textContent=pct(m.cr);$('kCompleteCount').textContent=fmt(m.c)+' complete';$('kIncomplete').textContent=pct(m.ir);$('kIncompleteCount').textContent=fmt(m.i)+' incomplete';$('kXFlag').textContent=pct(m.t?m.x/m.t:0);$('kXCount').textContent=fmt(m.x)+' X Flag';$('kIncompleteDocs').textContent=fmt(m.i);trend($('trendChart'),a);
 const rg=Object.entries(group(a,'region')).map(([label,rows])=>({label,value:metrics(rows).ir,display:pct(metrics(rows).ir)})).sort((x,y)=>y.value-x.value).slice(0,6);bars($('regionChart'),rg,.22);
 const inc=a.filter(d=>d.is_incomplete);const rs=Object.entries(group(inc,'reason')).map(([label,rows])=>({label,value:inc.length?rows.length/inc.length:0,display:pct(inc.length?rows.length/inc.length:0)})).sort((x,y)=>y.value-x.value).slice(0,6);bars($('reasonChart'),rs);
 const shops=shopRows(a,50,10);table($('shopTable'),shops,7);table($('drillShopTable'),shopRows(a,20,100),100);
 $('dTotal').textContent=fmt(m.t);$('dComplete').textContent=fmt(m.c)+' ('+pct(m.cr)+')';$('dIncomplete').textContent=fmt(m.i)+' ('+pct(m.ir)+')';$('dX').textContent=fmt(m.x);bars($('drillReason'),rs);
 $('msgKey').textContent=`ตรวจทั้งหมด ${fmt(m.t)} เอกสาร | Complete ${pct(m.cr)} | Incomplete ${pct(m.ir)}`;
 const top2=rs.slice(0,2),sum=top2.reduce((s,x)=>s+x.value,0);$('msgCause').textContent=top2.length?`${top2.map(x=>x.label).join(' + ')} = ${pct(sum)} ของ Incomplete`:'ไม่มีเอกสารไม่สมบูรณ์';$('msgFocus').textContent=rg.length?`เร่งติดตาม ${rg[0].label} ที่ Incomplete ${rg[0].display}${shops.length?' และ '+shops[0].name:''}`:'—'}
-['fMonth','fRegion','fChannel','fOrder','fShop'].forEach(id=>$(id).addEventListener('change',update));$('resetBtn').onclick=()=>{['fMonth','fRegion','fChannel','fOrder','fShop'].forEach(id=>$(id).value='');update()};document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active')});update();
+
+$('fMonth').addEventListener('change',()=>{refreshDependentFilters();update()});
+$('fRegion').addEventListener('change',()=>{refreshDependentFilters();update()});
+$('fChannel').addEventListener('change',update);
+$('fOrder').addEventListener('change',update);
+$('fShop').addEventListener('change',update);
+$('resetBtn').onclick=()=>{['fMonth','fRegion','fChannel','fOrder','fShop'].forEach(id=>$(id).value='');refreshDependentFilters();update()};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active')});
+update();
