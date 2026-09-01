@@ -74,84 +74,30 @@ function topRoot(rows){
  const a=Object.entries(m).sort((a,b)=>b[1]-a[1]); return a.length?{name:a[0][0],n:a[0][1],share:pct(a[0][1],inc.length)}:null;
 }
 function renderOverviewHighlight(rows){
- const s=statusStats(rows), root=topRoot(rows);
- const scope=scopeLabel();
- const isAll=!filters.m && !filters.rr && !filters.ar && !filters.sh && !filters.ch && !filters.ot;
- const isRegion=!!filters.rr && !filters.ar && !filters.sh && !filters.ch && !filters.ot;
- const isArea=!!filters.ar && !filters.sh && !filters.ch && !filters.ot;
- const isShop=!!filters.sh;
- const target=95;
- const cr=pct(s.complete,s.cases), ir=pct(s.incomplete,s.cases), xr=pct(s.xflag,s.cases);
-
- // Everything below is calculated from `rows`, i.e. the CURRENT selected scope only.
- const incompleteRows=rows.filter(r=>r.st!=="สมบูรณ์");
- const reasonMap={};
- incompleteRows.forEach(r=>{
-   const k=r.reason && r.reason!=="ไม่ระบุ" ? r.reason : "ไม่ระบุสาเหตุ";
-   reasonMap[k]=(reasonMap[k]||0)+1;
- });
- const topReasons=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
- const topReason=topReasons[0];
- const top3Reasons=topReasons.slice(0,3);
-
- const shops=groupShop(rows);
- const topIncompleteShop=[...shops].sort((a,b)=>b.i-a.i || b.ir-a.ir || b.c-a.c)[0];
- const bestShop=[...shops].filter(x=>x.c>=5).sort((a,b)=>b.cr-a.cr || b.c-a.c)[0];
-
- const scopeTitle=isAll
-   ? "ภาพรวม W&W"
-   : `EXECUTIVE HIGHLIGHT • ${scope}`;
-
- const levelText=isShop
-   ? `ระดับสาขา <b>${esc(filters.sh)}</b>`
-   : isArea
-     ? `ระดับ Area <b>${esc(filters.ar)}</b>`
-     : isRegion
-       ? `ระดับ Region <b>${esc(filters.rr)}</b>`
-       : isAll
-         ? "ภาพรวมทั้งหมด"
-         : `Scope <b>${esc(scope)}</b>`;
-
- const qualityText = s.cases
-   ? `ตรวจ <b>${fmt(s.cases)}</b> รายการ • Complete <b>${pct1(cr)}</b> (${fmt(s.complete)} รายการ) • Incomplete <b>${pct1(ir)}</b> (${fmt(s.incomplete)} รายการ) • X Flag <b>${pct1(xr)}</b> (${fmt(s.xflag)} รายการ) • เทียบ Target 95%: <b>${pct1(cr-target)}</b>`
-   : "ไม่พบข้อมูลใน Scope ที่เลือก";
-
- const qualityMessage = !s.cases
-   ? "กรุณาปรับ Filter เพื่อดูข้อมูล"
-   : cr>=target
-     ? `คุณภาพอยู่ <b>เหนือ Target ${pct1(cr-target)}</b>`
-     : `คุณภาพยัง <b>ต่ำกว่า Target ${pct1(target-cr)}</b>`;
-
- const reasonText = topReason
-   ? `Root Cause อันดับ 1 คือ <b>${esc(topReason[0])}</b> จำนวน <b>${fmt(topReason[1])}</b> รายการ คิดเป็น <b>${pct1(pct(topReason[1],s.incomplete))}</b> ของ Incomplete ทั้งหมด`
-   : "ไม่พบ Incomplete Case จึงไม่มี Root Cause ให้ติดตาม";
-
- const reasonDetail = top3Reasons.length
-   ? `Top 3 สาเหตุ: ${top3Reasons.map(([n,v],i)=>`<b>${i+1}) ${esc(n)}</b> ${fmt(v)} รายการ (${pct1(pct(v,s.incomplete))})`).join(" • ")}`
-   : "";
-
- const shopText = topIncompleteShop
-   ? isShop
-     ? `สาขานี้มี Incomplete <b>${fmt(topIncompleteShop.i)}</b> รายการ จาก ${fmt(topIncompleteShop.c)} รายการ (${pct1(topIncompleteShop.ir)})`
-     : `Shop ที่มี Incomplete มากที่สุดใน Scope คือ <b>${esc(topIncompleteShop.sh)}</b> จำนวน <b>${fmt(topIncompleteShop.i)}</b> รายการ (${pct1(topIncompleteShop.ir)})`
-   : "ไม่มี Shop ที่มี Incomplete Case";
-
- const performanceText = bestShop
-   ? `Shop ที่มี Complete Rate สูงสุดคือ <b>${esc(bestShop.sh)}</b> • Complete <b>${pct1(bestShop.cr)}</b> จาก ${fmt(bestShop.c)} รายการ`
-   : "ยังไม่มี Shop ที่มีข้อมูลเพียงพอสำหรับการเปรียบเทียบ";
-
- const actionText = !s.incomplete
-   ? `Scope นี้ไม่พบ Incomplete Case — ให้รักษาระดับคุณภาพและติดตามผลต่อเนื่อง`
-   : `${reasonText} → ควรเริ่มตรวจสอบ <b>${topIncompleteShop?esc(topIncompleteShop.sh):"จุดที่เกี่ยวข้อง"}</b> และทบทวนรายการ Incomplete ทีละ Case`;
-
- const scopeNote = `ข้อมูลทุกตัวใน Executive Highlight นี้คำนวณจาก <b>${esc(scope)}</b> เท่านั้น`;
-
- $("overviewHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">${scopeTitle}</div></div>
- <div class="highlight-grid">
-  <div class="highlight-item risk"><b>1. QUALITY STATUS — สถานการณ์คุณภาพ</b><br>${levelText}<br>${qualityText}<br><b>${qualityMessage}</b><br><span style="font-size:11px;color:#5d7087">${scopeNote}</span></div>
-  <div class="highlight-item goodbox"><b>2. PERFORMANCE — ผลงานและจุดเปรียบเทียบ</b><br>${shopText}<br>${performanceText}${!isShop && topIncompleteShop?`<br><b>จุดที่ต้องจับตา:</b> ${esc(topIncompleteShop.sh)} มี ${fmt(topIncompleteShop.i)} Incomplete Case`:""}</div>
-  <div class="highlight-item focus"><b>3. ROOT CAUSE — สาเหตุที่ต้องแก้</b><br>${reasonText}<br>${reasonDetail}<br><b>Management Action:</b> ${actionText}</div>
- </div>`;
+ const s=statusStats(rows), scope=scopeLabel(), target=95;
+ const cr=pct(s.complete,s.cases), ir=pct(s.incomplete,s.cases), xr=pct(s.xflag,s.cases), gap=cr-target;
+ const isAll=!filters.m&&!filters.rr&&!filters.ar&&!filters.ch&&!filters.ot&&!filters.sh, isShop=!!filters.sh;
+ const shops=groupShop(rows).filter(x=>x.c>0);
+ const topIncompleteShop=[...shops].sort((a,b)=>b.i-a.i||b.ir-a.ir||b.c-a.c)[0]||null;
+ const topRateShop=[...shops].filter(x=>x.c>=10).sort((a,b)=>b.cr-a.cr||b.c-a.c)[0]||null;
+ const inc=rows.filter(r=>r.st!=="สมบูรณ์");
+ const rm={}; inc.forEach(r=>{const k=r.cat||"ไม่ระบุ";rm[k]=(rm[k]||0)+1});
+ const roots=Object.entries(rm).sort((a,b)=>b[1]-a[1]);
+ const r1=roots[0]||null,r2=roots[1]||null,r3=roots[2]||null;
+ const top3=(r1?r1[1]:0)+(r2?r2[1]:0)+(r3?r3[1]:0);
+ const reasonMap={}; inc.forEach(r=>{const k=r.reason&&r.reason!=="ไม่ระบุ"?r.reason:"ไม่ระบุ";reasonMap[k]=(reasonMap[k]||0)+1});
+ const reasons=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]); const d1=reasons[0]||null;
+ const em={}; rows.filter(r=>!isUnassigned(r)).forEach(r=>{const k=r.emp;if(!em[k])em[k]={e:k,c:0,i:0};em[k].c++;if(r.st!=="สมบูรณ์")em[k].i++});
+ const topEmp=Object.values(em).filter(x=>x.c>=5).map(x=>({...x,ir:pct(x.i,x.c)})).sort((a,b)=>b.i-a.i||b.ir-a.ir)[0]||null;
+ const scopeTitle=isAll?"ภาพรวม W&W":`ข้อมูลตาม Scope ที่เลือก: ${scope}`;
+ const status=`ตรวจทั้งหมด <b>${fmt(s.cases)}</b> cases • Complete <b>${pct1(cr)}</b> (${fmt(s.complete)}) • Incomplete <b>${pct1(ir)}</b> (${fmt(s.incomplete)}) • X Flag <b>${pct1(xr)}</b> (${fmt(s.xflag)}) • Target <b>${target}.0%</b> • Gap <b>${pct1(gap)}</b>`;
+ const quality=s.cases?(ir===0?`ไม่พบ Incomplete Case ใน Scope นี้ — คุณภาพอยู่เหนือ Target และควรรักษาระดับต่อเนื่อง`:`คุณภาพ ${gap>=0?`สูงกว่า Target <b>${target}.0%</b> อยู่ <b>${pct1(gap)}</b>`:`ต่ำกว่า Target <b>${target}.0%</b> อยู่ <b>${pct1(Math.abs(gap))}</b>`} โดยมี Incomplete <b>${fmt(s.incomplete)} cases</b>`):"ไม่พบข้อมูลใน Scope ที่เลือก";
+ let perf=isShop?`สาขา <b>${esc(filters.sh)}</b> มี ${fmt(s.cases)} cases • Incomplete <b>${fmt(s.incomplete)} cases (${pct1(ir)})</b>`:(topIncompleteShop?`สาขาที่มี Incomplete สูงสุดคือ <b>${esc(topIncompleteShop.sh)}</b> จำนวน <b>${fmt(topIncompleteShop.i)} cases (${pct1(topIncompleteShop.ir)})</b>`:"ยังไม่มีข้อมูลสาขาสำหรับเปรียบเทียบ");
+ if(isShop&&topEmp) perf+=` • พนักงานที่มี Incomplete สูงสุดคือ <b>${esc(topEmp.e)}</b> ${fmt(topEmp.i)} cases (${pct1(topEmp.ir)})`;
+ if(!isShop&&topRateShop) perf+=` • Complete Rate สูงสุดคือ <b>${esc(topRateShop.sh)}</b> <b>${pct1(topRateShop.cr)}</b> จาก ${fmt(topRateShop.c)} cases`;
+ const root=r1?`Root Cause หลักคือ <b>${esc(r1[0])}</b> จำนวน <b>${fmt(r1[1])} cases (${pct1(pct(r1[1],s.incomplete))})</b> ของ Incomplete${d1?` • Detailed Reason สูงสุดคือ <b>${esc(d1[0])}</b> ${fmt(d1[1])} cases (${pct1(pct(d1[1],s.incomplete))})`:""}`:"ไม่พบ Root Cause เพราะไม่มี Incomplete Case";
+ const action=!s.incomplete?`รักษา Complete Rate ให้อยู่เหนือ Target <b>${target}.0%</b> และติดตามผลต่อเนื่อง`:`เร่งแก้ <b>${esc(r1[0])}</b> ก่อน${d1?` โดยเจาะจงที่ <b>${esc(d1[0])}</b>`:""}${topIncompleteShop?` • เริ่มที่ <b>${esc(topIncompleteShop.sh)}</b>`:""} • Top 3 Root Cause รวม <b>${fmt(top3)} cases (${pct1(pct(top3,s.incomplete))})</b> ของ Incomplete`;
+ $("overviewHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • ${scopeTitle}</div></div><div class="highlight-grid"><div class="highlight-item risk"><b>1. QUALITY STATUS — สถานการณ์คุณภาพ</b><br>${status}<br>${quality}<br><b>ข้อสรุป:</b> ${s.incomplete?`ยังมี ${fmt(s.incomplete)} cases ที่ต้องติดตาม`:`ไม่พบ Case ที่ต้องแก้ไข`}</div><div class="highlight-item goodbox"><b>2. PERFORMANCE — ผลงานและจุดเปรียบเทียบ</b><br>${perf}<br><b>มุมมองผู้บริหาร:</b> ${isAll?"ใช้เพื่อเปรียบเทียบ Region/Shop ทั้งหมดในภาพรวม":"ข้อมูลและการเปรียบเทียบคำนวณจาก Scope ที่เลือกเท่านั้น"}</div><div class="highlight-item focus"><b>3. ROOT CAUSE & ACTION — สาเหตุและสิ่งที่ควรทำ</b><br>${root}<br><b>Management Action:</b> ${action}</div></div>`;
 }
 function renderKpis(rows){
  const s=statusStats(rows), target=95, cr=pct(s.complete,s.cases), ir=pct(s.incomplete,s.cases), xr=pct(s.xflag,s.cases);
