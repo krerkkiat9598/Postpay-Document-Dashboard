@@ -74,15 +74,40 @@ function topRoot(rows){
  const a=Object.entries(m).sort((a,b)=>b[1]-a[1]); return a.length?{name:a[0][0],n:a[0][1],share:pct(a[0][1],inc.length)}:null;
 }
 function renderOverviewHighlight(rows){
- const s=statusStats(rows), risk=topRegion(rows,false), best=topRegion(rows,true), root=topRoot(rows);
+ const s=statusStats(rows), root=topRoot(rows);
+ const scope=scopeLabel();
+ const isAll=!filters.rr && !filters.ar && !filters.sh && !filters.ch && !filters.ot;
+ const isRegion=!!filters.rr && !filters.ar && !filters.sh;
  const shops=groupShop(rows).filter(x=>x.c>=50);
- const prob=[...shops].sort((a,b)=>b.i-a.i)[0];
  const perf=[...shops].sort((a,b)=>b.cr-a.cr || b.c-a.c)[0];
- $("overviewHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • ประเด็นสำคัญสำหรับผู้บริหาร</div></div>
+ const prob=[...shops].sort((a,b)=>b.i-a.i || b.ir-a.ir)[0];
+
+ let scopeTitle = isAll ? "ภาพรวม W&W" : `ข้อมูลตาม Scope ที่เลือก: ${scope}`;
+ let qualityText = `ตรวจทั้งหมด <b>${fmt(s.cases)}</b> รายการ • ผ่าน <b>${pct1(pct(s.complete,s.cases))}</b> (${fmt(s.complete)} รายการ) • ไม่สมบูรณ์ <b>${pct1(pct(s.incomplete,s.cases))}</b> (${fmt(s.incomplete)} รายการ)`;
+ if(isRegion){
+   const rs=statusStats(rows.filter(r=>r.rr===filters.rr));
+   qualityText += ` • <b>${esc(filters.rr)}</b> เป็นข้อมูลของ Region ที่เลือกเท่านั้น`;
+ } else if(!isAll){
+   qualityText += ` • ตัวเลขทั้งหมดเป็นข้อมูลของ <b>${esc(scope)}</b> เท่านั้น`;
+ }
+
+ const focusText = root
+   ? `Root Cause หลักคือ <b>${esc(root.name)}</b> จำนวน <b>${fmt(root.n)}</b> รายการ คิดเป็น <b>${pct1(root.share)}</b> ของ Incomplete Cases ใน Scope นี้`
+   : "ยังไม่พบ Incomplete Case ใน Scope นี้";
+
+ const performanceText = perf
+   ? `สาขาที่มี Complete Rate สูงสุดใน Scope นี้คือ <b>${esc(perf.sh)}</b> • Complete <b>${pct1(perf.cr)}</b> จาก ${fmt(perf.c)} รายการ`
+   : "ยังไม่มีสาขาที่มีข้อมูลตั้งแต่ 50 รายการเพื่อจัดอันดับ";
+
+ const problemText = prob
+   ? `สาขาที่มี Incomplete Cases มากที่สุดใน Scope นี้คือ <b>${esc(prob.sh)}</b> • ${fmt(prob.i)} รายการ (${pct1(prob.ir)})`
+   : "ยังไม่มีสาขาที่เข้าเกณฑ์สำหรับการจัดอันดับ";
+
+ $("overviewHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • ${scopeTitle}</div></div>
  <div class="highlight-grid">
-  <div class="highlight-item risk"><b>Quality:</b> Complete ${pct1(pct(s.complete,s.cases))} (${fmt(s.complete)} cases) • Incomplete ${pct1(pct(s.incomplete,s.cases))} (${fmt(s.incomplete)} cases)${risk?` โดย <b>${esc(risk.name)}</b> มี Incomplete Rate สูงสุด ${pct1(risk.ir)} / ${fmt(risk.incomplete)} cases`:""}</div>
-  <div class="highlight-item goodbox"><b>Performance:</b> ${best?`Region ที่ดีที่สุดคือ <b>${esc(best.name)}</b> Complete ${pct1(best.cr)}`:"ไม่มีข้อมูล"}${perf?` • Top Shop (≥50 cases): <b>${esc(perf.sh)}</b> Complete ${pct1(perf.cr)}`:""}</div>
-  <div class="highlight-item focus"><b>Management Focus:</b> ${root?`Root Cause หลักคือ <b>${esc(root.name)}</b> ${fmt(root.n)} cases (${pct1(root.share)})`:"ยังไม่มี Incomplete"}${prob?` • ควรติดตาม <b>${esc(prob.sh)}</b> ซึ่งมี ${fmt(prob.i)} incomplete cases`:""}</div>
+  <div class="highlight-item risk"><b>1. สถานการณ์คุณภาพ:</b> ${qualityText}. ${prob?`<br><b>จุดที่ต้องติดตาม:</b> ${problemText}`:""}</div>
+  <div class="highlight-item goodbox"><b>2. ผลงานเด่น:</b> ${isAll?`ระบบจะเปรียบเทียบทุก Region/Shop ภายใน Scope นี้`:isRegion?`Region <b>${esc(filters.rr)}</b> ถูกแสดงเป็น Scope หลัก`:`กำลังดูเฉพาะ <b>${esc(scope)}</b>`}. ${performanceText}</div>
+  <div class="highlight-item focus"><b>3. ประเด็นที่ควรดำเนินการ:</b> ${focusText}. ${prob?`<br><b>จุดเริ่มต้น:</b> ตรวจสอบ ${esc(prob.sh)} และสาเหตุหลักใน Scope นี้`:""}</div>
  </div>`;
 }
 function renderKpis(rows){
@@ -170,9 +195,9 @@ function renderEmployee(rows){
  const top=a[0];
  $("peopleHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • Employee Accountability</div></div>
  <div class="highlight-grid">
-  <div class="highlight-item risk"><b>Highest Incomplete:</b> ${top?`<b>${esc(top.e)}</b> มี ${fmt(top.i)} incomplete จาก ${fmt(top.c)} cases (${pct1(top.ir)})`:"ไม่มีพนักงานเข้าเกณฑ์"}</div>
-  <div class="highlight-item focus"><b>Scope:</b> ${esc(scopeLabel())} • Employee Ranking แยก “ไม่ระบุ” ออกจากพนักงานจริง เพื่อไม่ให้ Ranking บิดเบือน</div>
-  <div class="highlight-item ${us.incomplete?'risk':'goodbox'}"><b>Data Quality:</b> ${us.cases?`พบ ${fmt(us.cases)} cases ที่ไม่ระบุพนักงาน และ ${fmt(us.incomplete)} incomplete cases ครอบคลุม ${fmt(ush)} shops`:"ไม่พบรายการไม่ระบุพนักงานใน Scope นี้"}</div>
+  <div class="highlight-item risk"><b>1) พนักงานที่ควรติดตาม:</b> ${top?`<b>${esc(top.e)}</b> มี Incomplete ${fmt(top.i)} รายการ จากทั้งหมด ${fmt(top.c)} รายการ (${pct1(top.ir)})`:"ไม่มีพนักงานเข้าเกณฑ์"}</div>
+  <div class="highlight-item focus"><b>2) ขอบเขตการวิเคราะห์:</b> ${esc(scopeLabel())}<br>Ranking จะแสดงเฉพาะพนักงานที่ระบุชื่อ เพื่อให้การเปรียบเทียบถูกต้อง</div>
+  <div class="highlight-item ${us.incomplete?'risk':'goodbox'}"><b>3) คุณภาพข้อมูลผู้รับผิดชอบ:</b> ${us.cases?`มี ${fmt(us.cases)} รายการที่ไม่ระบุพนักงาน • Incomplete ${fmt(us.incomplete)} รายการ • ครอบคลุม ${fmt(ush)} สาขา`:"ไม่พบรายการที่ไม่ระบุพนักงานใน Scope นี้"}</div>
  </div>`;
 }
 function renderPeople(rows){
@@ -229,9 +254,9 @@ function renderRoot(rows){
  $("rootScope").textContent=`${scopeLabel()} • ${cat||"All Root Causes"}${selectedReason?" • "+selectedReason:""}`;
  $("rootHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • Root Cause & Where to Act</div></div>
  <div class="highlight-grid">
-  <div class="highlight-item risk"><b>Main Root Cause:</b> ${topCat?`<b>${esc(topCat[0])}</b> ${fmt(topCat[1])} cases (${pct1(pct(topCat[1],inc.length))} ของ incomplete)`:"ไม่มี Incomplete Case"}</div>
-  <div class="highlight-item focus"><b>Detailed Reason:</b> ${selectedReason?`กำลัง Drill-down <b>${esc(selectedReason)}</b> ${fmt(locationRows.length)} cases`:topReason?`อันดับ 1 คือ <b>${esc(topReason[0])}</b> ${fmt(topReason[1])} cases`:"ไม่มี Detailed Reason"}</div>
-  <div class="highlight-item ${topLoc?'risk':'goodbox'}"><b>Where to Focus:</b> ${topLoc?`<b>${esc(topLoc.rr)} → ${esc(topLoc.ar)} → ${esc(topLoc.sh)}</b> พบ ${fmt(topLoc.c)} cases (${pct1(pct(topLoc.c,locationRows.length))})`:"ไม่มี Location ที่ต้องติดตาม"}</div>
+  <div class="highlight-item risk"><b>1) สาเหตุหลักของปัญหา:</b> ${topCat?`<b>${esc(topCat[0])}</b> จำนวน ${fmt(topCat[1])} รายการ คิดเป็น <b>${pct1(pct(topCat[1],inc.length))}</b> ของ Incomplete Cases`:"ไม่มี Incomplete Case"}</div>
+  <div class="highlight-item focus"><b>2) รายละเอียดสาเหตุ:</b> ${selectedReason?`กำลังวิเคราะห์ <b>${esc(selectedReason)}</b> จำนวน ${fmt(locationRows.length)} รายการ`:topReason?`สาเหตุย่อยอันดับ 1 คือ <b>${esc(topReason[0])}</b> จำนวน ${fmt(topReason[1])} รายการ`:"ไม่มี Detailed Reason"}</div>
+  <div class="highlight-item ${topLoc?'risk':'goodbox'}"><b>3) จุดที่ควรเข้าไปแก้ไข:</b> ${topLoc?`<b>${esc(topLoc.rr)} → ${esc(topLoc.ar)} → ${esc(topLoc.sh)}</b> พบ ${fmt(topLoc.c)} รายการ (${pct1(pct(topLoc.c,locationRows.length))} ของ Scope ที่เลือก)`:"ไม่มี Location ที่ต้องติดตาม"}</div>
  </div>`;
 }
 function scopeLabel(){
