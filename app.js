@@ -85,8 +85,8 @@ function renderOverviewHighlight(rows){
  const topRoot=roots[0]||null, topReason=reasons[0]||null, top3=roots.slice(0,3).reduce((n,x)=>n+x[1],0);
  const em={}; rows.filter(r=>!isUnassigned(r)).forEach(r=>{const k=r.emp;if(!em[k])em[k]={e:k,c:0,i:0};em[k].c++;if(r.st!=="สมบูรณ์")em[k].i++});
  const topEmp=Object.values(em).filter(x=>x.c>=5).map(x=>({...x,ir:pct(x.i,x.c)})).sort((a,b)=>b.i-a.i||b.ir-a.ir)[0]||null;
- const scopeTitle=scope==="All W&W"?"ภาพรวม W&W":`ข้อมูลตาม Scope ที่เลือก: ${esc(scope)}`;
- const status=s.cases?`ตรวจ <b>${fmt(s.cases)}</b> รายการ: Complete <b>${pct1(cr)}</b> (${fmt(s.complete)}), Incomplete <b>${pct1(ir)}</b> (${fmt(s.incomplete)}), X Flag <b>${pct1(xr)}</b> (${fmt(s.xflag)})`:`ไม่พบข้อมูลใน Scope ที่เลือก`;
+ const scopeTitle=scope==="All W&W"?"ภาพรวม W&W":esc(scope);
+ const status=s.cases?`ตรวจ <b>${fmt(s.cases)}</b> รายการ: Complete <b>${pct1(cr)}</b> (${fmt(s.complete)}), Incomplete <b>${pct1(ir)}</b> (${fmt(s.incomplete)}), X Flag <b>${pct1(xr)}</b> (${fmt(s.xflag)})`:`ไม่พบข้อมูลสำหรับตัวกรองปัจจุบัน`;
  const quality=s.cases?(gap<0?`Complete Rate <b>${pct1(cr)}</b> ต่ำกว่า Target <b>${target}.0%</b> อยู่ <b>${pct1(Math.abs(gap))}</b> จุด และมี Incomplete <b>${fmt(s.incomplete)} รายการ</b> ที่ต้องเร่งติดตาม`:`Complete Rate <b>${pct1(cr)}</b> ผ่าน Target <b>${target}.0%</b> อยู่ <b>${pct1(gap)}</b> จุด`):"";
  let perf=topIncompleteShop?`Incomplete สูงสุดอยู่ที่ <b>${esc(topIncompleteShop.sh)}</b> จำนวน <b>${fmt(topIncompleteShop.i)} รายการ</b> (${pct1(topIncompleteShop.ir)} ของรายการในสาขา)`:`ไม่มี Incomplete ให้เปรียบเทียบ`;
  if(topRateShop && (!topIncompleteShop || topRateShop.sh!==topIncompleteShop.sh)) perf+=`<br>Benchmark: <b>${esc(topRateShop.sh)}</b> Complete Rate <b>${pct1(topRateShop.cr)}</b> จาก ${fmt(topRateShop.c)} รายการ`;
@@ -95,7 +95,7 @@ function renderOverviewHighlight(rows){
  const reasonText=topReason?`Detailed Reason สูงสุด: <b>${esc(topReason[0])}</b> ${fmt(topReason[1])} รายการ (${pct1(pct(topReason[1],s.incomplete))})`:`ไม่มี Detailed Reason`;
  const action=s.incomplete?`เริ่มแก้จาก <b>${esc(topRoot?topRoot[0]:"Root Cause หลัก")}</b> → <b>${esc(topReason?topReason[0]:"Detailed Reason สูงสุด")}</b>${topIncompleteShop?` → Focus <b>${esc(topIncompleteShop.sh)}</b>`:""} และติดตามการปิด Case จนครบ <b>${fmt(s.incomplete)} รายการ</b>`:`รักษา Complete Rate ให้อยู่เหนือ Target และตรวจสอบไม่ให้เกิด Incomplete ซ้ำ`;
  const focusLine=top3?`Top 3 Root Cause รวม <b>${fmt(top3)} รายการ</b> (${pct1(pct(top3,s.incomplete))} ของ Incomplete)`:"";
- $("overviewHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • ${scopeTitle}</div></div><div class="highlight-grid"><div class="highlight-item risk"><b>1. QUALITY STATUS — สถานการณ์คุณภาพ</b><br>${status}<br>${quality}<br><b>Executive Takeaway:</b> ${s.incomplete?`ต้องเร่งลด Incomplete ${fmt(s.incomplete)} รายการ เพื่อยกระดับ Complete Rate กลับสู่ ≥ ${target}.0%`:`คุณภาพผ่านเป้าหมายและไม่พบ Incomplete Case`}</div><div class="highlight-item goodbox"><b>2. PERFORMANCE — ผลงานและจุดที่ต้อง Focus</b><br>${perf}<br><b>มุมมองผู้บริหาร:</b> ใช้สาขาที่ Complete Rate สูงเป็น Benchmark และ Focus จุดที่มี Incomplete สูงใน Scope นี้</div><div class="highlight-item focus"><b>3. ROOT CAUSE & ACTION — สาเหตุและสิ่งที่ควรดำเนินการ</b><br>${rootText}<br>${reasonText}<br>${focusLine}<br><b>Management Action:</b> ${action}</div></div>`;
+ $("overviewHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • ${scopeTitle}</div></div><div class="highlight-grid"><div class="highlight-item risk"><b>1. QUALITY STATUS — สถานการณ์คุณภาพ</b><br>${status}<br>${quality}<br><b>Executive Takeaway:</b> ${s.incomplete?`Priority 1: ปิด Incomplete ${fmt(s.incomplete)} รายการ เพื่อนำ Complete Rate กลับสู่ ≥ ${target}.0%`:`คุณภาพผ่านเป้าหมายและไม่พบ Incomplete Case`}</div><div class="highlight-item goodbox"><b>2. PERFORMANCE — ผลงานและจุดที่ต้อง Focus</b><br>${perf}<br><b>มุมมองผู้บริหาร:</b> ใช้สาขาที่ Complete Rate สูงเป็น Benchmark และ Focus จุดที่มี Incomplete สูงที่สุดในตัวกรองปัจจุบัน</div><div class="highlight-item focus"><b>3. ROOT CAUSE & ACTION — สาเหตุและสิ่งที่ควรดำเนินการ</b><br>${rootText}<br>${reasonText}<br>${focusLine}<br><b>Management Action:</b> ${action}</div></div>`;
 }
 function renderKpis(rows){
  const s=statusStats(rows), target=95, cr=pct(s.complete,s.cases), ir=pct(s.incomplete,s.cases), xr=pct(s.xflag,s.cases);
@@ -153,8 +153,8 @@ function renderShopTables(rows){
  const shops=groupShop(rows).filter(x=>x.c>=50);
  const top=[...shops].sort((a,b)=>b.cr-a.cr || b.c-a.c).slice(0,7);
  const prob=[...shops].sort((a,b)=>b.i-a.i || b.ir-a.ir).slice(0,7);
- $("topShops").innerHTML=top.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Shop</th><th>Cases</th><th>Incomplete</th><th>Complete Rate</th></tr></thead><tbody>${top.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sh)}</td><td class="num">${fmt(x.c)}</td><td class="num bad">${fmt(x.i)}</td><td class="num good">${pct1(x.cr)}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มี Shop ที่ถึง 50 Cases ใน Scope นี้</div>";
- $("problemShops").innerHTML=prob.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Shop</th><th>Cases</th><th>Incomplete</th><th>Incomplete Rate</th></tr></thead><tbody>${prob.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sh)}</td><td class="num">${fmt(x.c)}</td><td class="num bad">${fmt(x.i)}</td><td class="num bad">${pct1(x.ir)}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มี Shop ที่ถึง 50 Cases ใน Scope นี้</div>";
+ $("topShops").innerHTML=top.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Shop</th><th>Cases</th><th>Incomplete</th><th>Complete Rate</th></tr></thead><tbody>${top.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sh)}</td><td class="num">${fmt(x.c)}</td><td class="num bad">${fmt(x.i)}</td><td class="num good">${pct1(x.cr)}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มี Shop ที่มีอย่างน้อย 50 Cases ในตัวกรองปัจจุบัน</div>";
+ $("problemShops").innerHTML=prob.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Shop</th><th>Cases</th><th>Incomplete</th><th>Incomplete Rate</th></tr></thead><tbody>${prob.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sh)}</td><td class="num">${fmt(x.c)}</td><td class="num bad">${fmt(x.i)}</td><td class="num bad">${pct1(x.ir)}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มี Shop ที่มีอย่างน้อย 50 Cases ในตัวกรองปัจจุบัน</div>";
 }
 function renderEmployee(rows){
  const assignedRows=rows.filter(r=>!isUnassigned(r));
@@ -176,22 +176,22 @@ function renderEmployee(rows){
  if(selectedEmployee && !a.some(x=>x.e===selectedEmployee)) selectedEmployee="";
  if(!selectedEmployee && a.length) selectedEmployee=a[0].e;
 
- $("employeeTable").innerHTML=a.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Employee</th><th>Shop</th><th>Cases</th><th>Incomplete</th><th>Rate</th></tr></thead><tbody>${a.slice(0,80).map((x,i)=>`<tr class="emp-row" data-emp="${esc(x.e)}" style="cursor:pointer;background:${selectedEmployee===x.e?'#eef7ff':''}"><td>${i+1}</td><td>${esc(x.e)}</td><td>${esc(x.shops.length===1?x.shops[0]:x.shops.length+" shops")}</td><td class="num">${fmt(x.c)}</td><td class="num bad">${fmt(x.i)}</td><td class="num ${x.ir>=10?'bad':'good'}">${pct1(x.ir)}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มีพนักงานที่ระบุชื่อและมีอย่างน้อย 5 Cases ใน Scope นี้</div>";
+ $("employeeTable").innerHTML=a.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Employee</th><th>Shop</th><th>Cases</th><th>Incomplete</th><th>Rate</th></tr></thead><tbody>${a.slice(0,80).map((x,i)=>`<tr class="emp-row" data-emp="${esc(x.e)}" style="cursor:pointer;background:${selectedEmployee===x.e?'#eef7ff':''}"><td>${i+1}</td><td>${esc(x.e)}</td><td>${esc(x.shops.length===1?x.shops[0]:x.shops.length+" shops")}</td><td class="num">${fmt(x.c)}</td><td class="num bad">${fmt(x.i)}</td><td class="num ${x.ir>=10?'bad':'good'}">${pct1(x.ir)}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มีพนักงานที่ระบุชื่อและมีอย่างน้อย 5 Cases ในตัวกรองปัจจุบัน</div>";
  document.querySelectorAll(".emp-row").forEach(el=>el.addEventListener("click",()=>{selectedEmployee=el.dataset.emp;renderPeople(rows)}));
 
  const top=a[0];
  $("peopleHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • Employee Accountability</div></div>
  <div class="highlight-grid">
   <div class="highlight-item risk"><b>1) พนักงานที่ควรติดตาม:</b> ${top?`<b>${esc(top.e)}</b> มี Incomplete ${fmt(top.i)} รายการ จากทั้งหมด ${fmt(top.c)} รายการ (${pct1(top.ir)})`:"ไม่มีพนักงานเข้าเกณฑ์"}</div>
-  <div class="highlight-item focus"><b>2) ขอบเขตการวิเคราะห์:</b> ${esc(scopeLabel())}<br>Ranking จะแสดงเฉพาะพนักงานที่ระบุชื่อ เพื่อให้การเปรียบเทียบถูกต้อง</div>
-  <div class="highlight-item ${us.incomplete?'risk':'goodbox'}"><b>3) คุณภาพข้อมูลผู้รับผิดชอบ:</b> ${us.cases?`มี ${fmt(us.cases)} รายการที่ไม่ระบุพนักงาน • Incomplete ${fmt(us.incomplete)} รายการ • ครอบคลุม ${fmt(ush)} สาขา`:"ไม่พบรายการที่ไม่ระบุพนักงานใน Scope นี้"}</div>
+  <div class="highlight-item focus"><b>2) ตัวกรองปัจจุบัน:</b> ${esc(scopeLabel())}<br>Ranking จะแสดงเฉพาะพนักงานที่ระบุชื่อ เพื่อให้การเปรียบเทียบถูกต้อง</div>
+  <div class="highlight-item ${us.incomplete?'risk':'goodbox'}"><b>3) คุณภาพข้อมูลผู้รับผิดชอบ:</b> ${us.cases?`มี ${fmt(us.cases)} รายการที่ไม่ระบุพนักงาน • Incomplete ${fmt(us.incomplete)} รายการ • ครอบคลุม ${fmt(ush)} สาขา`:"ไม่พบรายการที่ไม่ระบุพนักงานในตัวกรองปัจจุบัน"}</div>
  </div>`;
 }
 function renderPeople(rows){
  renderEmployee(rows);
  const empRows=selectedEmployee?rows.filter(r=>r.emp===selectedEmployee):[];
  const s=statusStats(empRows);
- $("peopleScope").textContent=`Scope: ${scopeLabel()}${selectedEmployee?" • Employee: "+selectedEmployee:""}`;
+ $("peopleScope").textContent=`ตัวกรอง: ${scopeLabel()}${selectedEmployee?" • Employee: "+selectedEmployee:""}`;
  $("shopProfile").innerHTML=selectedEmployee?`<div class="profile">
    <div class="box"><span>EMPLOYEE</span><b style="font-size:16px">${esc(selectedEmployee)}</b></div>
    <div class="box"><span>CASES</span><b>${fmt(s.cases)}</b></div>
@@ -244,7 +244,7 @@ function renderRoot(rows){
  $("rootScope").textContent=`${scopeLabel()} • ${cat||"All Root Causes"}${selectedReason?" • "+selectedReason:""}`;
  $("rootHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • Root Cause & Where to Act</div></div>
  <div class="highlight-grid">
-  <div class="highlight-item risk"><b>1) สาเหตุหลักของปัญหา:</b> ${topCat?`<b>${esc(topCat[0])}</b> จำนวน <b>${fmt(topCat[1])}</b> รายการ คิดเป็น <b>${pct1(pct(topCat[1],rootDen))}</b> ของ Incomplete ใน Scope นี้`:"ไม่มี Incomplete Case"}</div>
+  <div class="highlight-item risk"><b>1) สาเหตุหลักของปัญหา:</b> ${topCat?`<b>${esc(topCat[0])}</b> จำนวน <b>${fmt(topCat[1])}</b> รายการ คิดเป็น <b>${pct1(pct(topCat[1],rootDen))}</b> ของ Incomplete ในตัวกรองปัจจุบัน`:"ไม่มี Incomplete Case"}</div>
   <div class="highlight-item focus"><b>2) Detailed Reason ที่ต้อง Focus:</b> ${selectedReason?`กำลัง Drill-down <b>${esc(selectedReason)}</b> จำนวน <b>${fmt(locationRows.length)}</b> รายการ`:topReason?`อันดับ 1 คือ <b>${esc(topReason[0])}</b> จำนวน <b>${fmt(topReason[1])}</b> รายการ (${pct1(pct(topReason[1],rootDen))})`:"ไม่มี Detailed Reason"}<br><b>Top 3 Root Cause:</b> ${fmt(top3)} รายการ (${pct1(pct(top3,inc.length))} ของ Incomplete)</div>
   <div class="highlight-item ${topLoc?'risk':'goodbox'}"><b>3) Where to Act:</b> ${topLoc?`เริ่มตรวจที่ <b>${esc(topLoc.rr)} → ${esc(topLoc.ar)} → ${esc(topLoc.sh)}</b> จำนวน <b>${fmt(topLoc.c)}</b> รายการ (${pct1(pct(topLoc.c,locationRows.length))} ของรายการที่กำลังวิเคราะห์)`:"ไม่มี Location ที่ต้องติดตาม"}</div>
  </div>`;
@@ -258,7 +258,7 @@ function renderAll(){
  renderOverviewHighlight(rows);
  renderKpis(rows);renderRegionCards(rows);renderTrend(rows);renderRegionRank(rows);renderShopTables(rows);
  $("scopeText").textContent=`${scopeLabel()} • ${fmt(rows.length)} cases`;
- $("footerCount").textContent=`Current scope: ${fmt(rows.length)} cases • W&W source total 41,596`;
+ $("footerCount").textContent=`Current filters: ${fmt(rows.length)} cases • W&W source total 41,596`;
  renderPeople(rows);renderRoot(rows);
 }
 $("rootCat").addEventListener("change",()=>{selectedReason="";renderRoot(currentRows())});
