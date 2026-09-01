@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Postpay Document Quality Dashboard</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">WIRE & WIRELESS • POSTPAY</div>
+      <h1>Document Quality Dashboard</h1>
+      <div class="subtitle">ผลการตรวจเอกสาร Postpay | 1 Jul – 17 Aug 2026</div>
+    </div>
+    <div class="brand-pill">Executive Dashboard</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="overview">Executive Overview</button>
+    <button class="tab" data-tab="drilldown">Shop Drill-down</button>
+  </nav>
+
+  <section class="filters card">
+    <div class="filter"><label>Month</label><select id="fMonth"></select></div>
+    <div class="filter"><label>Region</label><select id="fRegion"></select></div>
+    <div class="filter"><label>Channel</label><select id="fChannel"></select></div>
+    <div class="filter"><label>Order Type</label><select id="fOrder"></select></div>
+    <div class="filter wide"><label>Shop</label><select id="fShop"></select></div>
+    <button id="resetBtn" class="reset">Reset</button>
+  </section>
+
+  <main id="overview" class="tabpage active">
+    <section class="kpis">
+      <div class="kpi card"><span>เอกสารที่ตรวจทั้งหมด</span><b id="kTotal">—</b><small>documents</small></div>
+      <div class="kpi card good"><span>Complete Rate</span><b id="kComplete">—</b><small id="kCompleteCount">—</small></div>
+      <div class="kpi card bad"><span>Incomplete Rate</span><b id="kIncomplete">—</b><small id="kIncompleteCount">—</small></div>
+      <div class="kpi card warn"><span>X Flag</span><b id="kXFlag">—</b><small id="kXCount">—</small></div>
+      <div class="kpi card"><span>Target</span><b>95.0%</b><small id="kGap">Gap —</small></div>
+    </section>
+
+    <section class="grid two">
+      <div class="card panel"><div class="panel-head"><h2>Document Quality Trend</h2><span>Complete % by Month</span></div><div id="trendChart" class="chart"></div></div>
+      <div class="card panel"><div class="panel-head"><h2>Quality by Region</h2><span>Top problem areas</span></div><div id="regionChart" class="bars"></div></div>
+    </section>
+
+    <section class="grid two">
+      <div class="card panel"><div class="panel-head"><h2>Top Root Causes</h2><span>% of incomplete</span></div><div id="reasonChart" class="bars"></div></div>
+      <div class="card panel"><div class="panel-head"><h2>Top Problem Shops</h2><span>minimum 50 documents</span></div><div id="shopTable"></div></div>
+    </section>
+
+    <section class="card takeaways">
+      <div><span>KEY MESSAGE</span><p id="msgKey">—</p></div>
+      <div><span>ROOT CAUSE</span><p id="msgCause">—</p></div>
+      <div><span>FOCUS</span><p id="msgFocus">—</p></div>
+      <div><span>ACTION</span><p>Focus high-risk regions & shops • reinforce document checklist • review repeat issues weekly</p></div>
+    </section>
+  </main>
+
+  <main id="drilldown" class="tabpage">
+    <section class="grid split">
+      <div class="card panel"><div class="panel-head"><h2>Shop Ranking</h2><span>Incomplete rate with volume</span></div><div id="drillShopTable"></div></div>
+      <div class="card panel"><div class="panel-head"><h2>Selected Scope</h2><span>Performance breakdown</span></div>
+        <div class="mini-kpis">
+          <div><span>Total</span><b id="dTotal">—</b></div><div><span>Complete</span><b id="dComplete">—</b></div><div><span>Incomplete</span><b id="dIncomplete">—</b></div><div><span>X Flag</span><b id="dX">—</b></div>
+        </div>
+        <div class="panel-head sub"><h2>Reason Breakdown</h2></div><div id="drillReason" class="bars"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Source: DPS Postpay document inspection data • Dashboard contains no customer name, BAN, SIM or subscriber-level personal data.</footer>
+</div>
+<script src="data.js"></script><script src="app.js"></script>
+</body></html>
