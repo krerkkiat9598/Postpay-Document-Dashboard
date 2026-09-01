@@ -1,18 +1,20 @@
-# Postpay Document Quality Web Dashboard
+# W&W Postpay Document Quality Executive Dashboard V5
 
-## เปิดดูบนเครื่อง
-เปิดไฟล์ `index.html` ด้วย Chrome หรือ Edge ได้ทันที
+Source: DPS_01July - 17Aug2026 sent 26.08.26(1).xlsb
 
-## ขึ้น GitHub Pages
-1. สร้าง GitHub repository เช่น `Postpay-Document-Dashboard`
-2. Upload ไฟล์ทั้งหมดในโฟลเดอร์นี้ไปที่ root ของ repository
-3. ไปที่ Settings > Pages
-4. Source: Deploy from a branch
-5. Branch: `main` / folder: `/ (root)` แล้ว Save
-6. GitHub จะแสดง URL รูปแบบ `https://USERNAME.github.io/Postpay-Document-Dashboard/`
+Scope: บริษัท ไวร์เออ แอนด์ ไวร์เลส จำกัด (W&W) only.
+The source file contains 43,485 rows; 41,596 rows belong to W&W and are used in this dashboard. Other company records are excluded.
 
-## ความปลอดภัย
-ไฟล์เว็บนี้ตัด Customer Name, BAN, Subscriber ID, SIM/ESIM และข้อมูลส่วนบุคคลออกแล้ว แต่ยังมีข้อมูลผลการดำเนินงานระดับ Region/Shop ซึ่งอาจเป็นข้อมูลภายในบริษัท หากเป็นข้อมูลลับ แนะนำใช้ private/internal hosting แทน public GitHub Pages.
+## Features
+- Executive overview by BMA / UPC1 / UPC2
+- Complete, Incomplete and X Flag counts + rates
+- Cascading filters: Month → Region → Area → Channel → Order Type → Shop
+- Top Performance Shops and Top Problem Shops
+- Shop → Employee drill-down
+- Employee ranking by Incomplete Cases
+- Root Cause Category + Detailed Reason
+- Root Cause location ranking: Region → Area → Shop
+- Executive navy / electric-blue 5G-inspired theme
 
-## อัปเดตข้อมูลในอนาคต
-Dashboard ใช้ `data.js` เป็นฐานข้อมูลแบบ static หากมีไฟล์ DPS รอบใหม่ ต้อง regenerate `data.js` จาก source ใหม่แล้ว replace ไฟล์เดิมบน hosting.
+## GitHub Pages
+Upload `index.html`, `style.css`, `app.js`, and `data.js` to the repository root.

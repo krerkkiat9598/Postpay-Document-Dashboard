@@ -1,62 +1,182 @@
-const DATA=window.POSTPAY_DATA||[];
-const $=id=>document.getElementById(id);
-const pct=x=>(x*100).toFixed(1)+'%';
-const fmt=x=>Number(x||0).toLocaleString('en-US');
 
-function vals(key, rows=DATA){
-  return [...new Set(rows.map(d=>d[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'th'));
-}
-function fillSelect(id,key,rows=DATA,placeholder='All'){
-  const s=$(id); if(!s) return;
-  const current=s.value;
-  s.innerHTML='<option value="">'+placeholder+'</option>'+vals(key,rows).map(v=>`<option value="${escAttr(v)}">${esc(v)}</option>`).join('');
-  if(vals(key,rows).includes(current)) s.value=current; else s.value='';
-}
-function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function escAttr(s){return esc(s)}
+const DATA = window.POSTPAY_DATA || [];
+const filters = {m:"", rr:"", ar:"", ch:"", ot:"", sh:""};
+let selectedEmployee = "";
 
-// Cascading filters: Month -> Region -> Channel / Order Type / Shop.
-// Channel, Order Type and Shop are always populated from the currently selected Region
-// (and Month, when selected), so users only see valid choices for that scope.
-function rowsBefore(key){
-  const month=$('fMonth')?.value||'';
-  const region=$('fRegion')?.value||'';
-  return DATA.filter(d=>(!month||d.month===month)&&(!region||d.region===region));
+const $ = id => document.getElementById(id);
+const uniq = arr => [...new Set(arr.filter(x=>x!=="" && x!=null))];
+const count = a => a.length;
+const pct = (n,d) => d ? (n/d*100) : 0;
+const fmt = n => n.toLocaleString("en-US");
+const pct1 = n => `${n.toFixed(1)}%`;
+const esc = s => String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const statusStats = rows => ({
+  cases: rows.length,
+  complete: rows.filter(r=>r.st==="สมบูรณ์").length,
+  incomplete: rows.filter(r=>r.st!=="สมบูรณ์").length,
+  xflag: rows.filter(r=>r.st==="ไม่สมบูรณ์ (X Flag)").length
+});
+const currentRows = () => DATA.filter(r =>
+  (!filters.m || r.m===filters.m) &&
+  (!filters.rr || r.rr===filters.rr) &&
+  (!filters.ar || r.ar===filters.ar) &&
+  (!filters.ch || r.ch===filters.ch) &&
+  (!filters.ot || r.ot===filters.ot) &&
+  (!filters.sh || r.sh===filters.sh)
+);
+function rowsExcept(key){
+  return DATA.filter(r => Object.entries(filters).every(([k,v]) => k===key || !v || r[{m:"m",rr:"rr",ar:"ar",ch:"ch",ot:"ot",sh:"sh"}[k]]===v));
 }
-function refreshDependentFilters(changed=''){
-  const base=rowsBefore();
-  fillSelect('fChannel','channel',base,'All');
-  fillSelect('fOrder','order_type',base,'All');
-  fillSelect('fShop','shop',base,'All');
+function fillSelect(id, values, value){
+  const el=$(id);
+  const opts=['<option value="">All</option>'].concat(values.sort((a,b)=>String(a).localeCompare(String(b),'th')).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`));
+  el.innerHTML=opts.join("");
+  el.value=value||"";
+}
+function refreshFilters(){
+  fillSelect("month",uniq(rowsExcept("m").map(r=>r.m)),filters.m);
+  fillSelect("region",uniq(rowsExcept("rr").map(r=>r.rr)),filters.rr);
+  fillSelect("area",uniq(rowsExcept("ar").map(r=>r.ar)),filters.ar);
+  fillSelect("channel",uniq(rowsExcept("ch").map(r=>r.ch)),filters.ch);
+  fillSelect("order",uniq(rowsExcept("ot").map(r=>r.ot)),filters.ot);
+  fillSelect("shop",uniq(rowsExcept("sh").map(r=>r.sh)),filters.sh);
+}
+function setFilter(k,v){
+ filters[k]=v;
+ const clearMap={m:["rr","ar","ch","ot","sh"],rr:["ar","ch","ot","sh"],ar:["ch","ot","sh"],ch:[],ot:["sh"],sh:[]};
+ (clearMap[k]||[]).forEach(x=>filters[x]="");
+ selectedEmployee="";
+ refreshFilters(); renderAll();
 }
 
-fillSelect('fMonth','month',DATA,'All');
-fillSelect('fRegion','region',DATA,'All');
-refreshDependentFilters();
+["month","region","area","channel","order","shop"].forEach((id,k)=>{
+  const map=["m","rr","ar","ch","ot","sh"];
+  $(id).addEventListener("change",e=>setFilter(map[k],e.target.value));
+});
+$("reset").addEventListener("click",()=>{Object.keys(filters).forEach(k=>filters[k]="");selectedEmployee="";refreshFilters();renderAll();});
 
-function filtered(){
-  const fs={month:$('fMonth').value,region:$('fRegion').value,channel:$('fChannel').value,order_type:$('fOrder').value,shop:$('fShop').value};
-  return DATA.filter(d=>Object.entries(fs).every(([k,v])=>!v||d[k]===v));
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{
+ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+ document.querySelectorAll(".tabpage").forEach(x=>x.classList.remove("active"));
+ b.classList.add("active");$(b.dataset.tab).classList.add("active");
+}));
+
+function renderKpis(rows){
+ const s=statusStats(rows), target=95, cr=pct(s.complete,s.cases), ir=pct(s.incomplete,s.cases), xr=pct(s.xflag,s.cases);
+ $("kpis").innerHTML=[
+  ["TOTAL CASES",fmt(s.cases),"รายการตรวจทั้งหมด",""],
+  ["COMPLETE",pct1(cr),`${fmt(s.complete)} cases`,"green"],
+  ["INCOMPLETE",pct1(ir),`${fmt(s.incomplete)} cases`,"red"],
+  ["X FLAG",pct1(xr),`${fmt(s.xflag)} cases`,"orange"],
+  ["TARGET",`${target}.0%`,`Gap ${pct1(cr-target)} vs target`,""]
+ ].map(x=>`<div class="kpi ${x[3]}"><div class="label">${x[0]}</div><div class="value ${x[3]}">${x[1]}</div><div class="sub">${x[2]}</div></div>`).join("");
 }
-function group(arr,key){const m={};arr.forEach(d=>(m[d[key]]??=[]).push(d));return m}
-function metrics(a){const t=a.length,c=a.reduce((s,d)=>s+d.is_complete,0),i=t-c,x=a.reduce((s,d)=>s+d.is_xflag,0);return{t,c,i,x,cr:t?c/t:0,ir:t?i/t:0}}
-function bars(el,items,max=null){if(!items.length){el.innerHTML='<div style="color:#6c7f91;padding:30px">No data</div>';return}max=max||Math.max(...items.map(x=>x.value),1);el.innerHTML=items.map((x,i)=>`<div class="bar-row ${i===0&&x.hot!==false?'hot':''}" title="${esc(x.label)}"><div class="bar-label">${esc(x.label)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(1,x.value/max*100)}%"></div></div><div class="bar-val">${x.display}</div></div>`).join('')}
-function trend(el,a){const g=group(a,'month'),order=["July'26","Aug'26"].filter(x=>g[x]);const pts=order.map((k,i)=>{const m=metrics(g[k]);return{k,label:k.replace("'26",''),v:m.cr}});if(!pts.length){el.innerHTML='No data';return}const W=620,H=220,pad=40,min=.85,max=1.0;const xy=pts.map((p,i)=>({x:pts.length===1?W/2:pad+i*(W-2*pad)/(pts.length-1),y:H-pad-(p.v-min)/(max-min)*(H-2*pad),...p}));let svg=`<svg viewBox="0 0 ${W} ${H}">`;[.85,.90,.95,1].forEach(v=>{const y=H-pad-(v-min)/(max-min)*(H-2*pad);svg+=`<line class="axis" x1="${pad}" y1="${y}" x2="${W-pad}" y2="${y}"/><text class="svg-label" x="5" y="${y+4}">${pct(v)}</text>`});if(xy.length>1)svg+=`<polyline class="trend-line" points="${xy.map(p=>p.x+','+p.y).join(' ')}"/>`;xy.forEach(p=>svg+=`<circle class="dot" cx="${p.x}" cy="${p.y}" r="6"/><text class="svg-value" x="${p.x}" y="${p.y-14}" text-anchor="middle">${pct(p.v)}</text><text class="svg-label" x="${p.x}" y="${H-9}" text-anchor="middle">${esc(p.label)}</text>`);svg+='</svg>';el.innerHTML=svg}
-function shopRows(a,minVol=50,limit=10){const g=group(a,'shop');return Object.entries(g).map(([name,rows])=>({name,...metrics(rows)})).filter(x=>x.t>=minVol).sort((a,b)=>b.ir-a.ir||b.t-a.t).slice(0,limit)}
-function table(el,rows,limit=10){el.innerHTML=`<table class="table"><thead><tr><th>Shop</th><th class="num">Total</th><th class="num">Incomplete</th><th class="num">Inc. %</th></tr></thead><tbody>${rows.slice(0,limit).map(r=>`<tr><td class="shop-name" title="${esc(r.name)}">${esc(r.name)}</td><td class="num">${fmt(r.t)}</td><td class="num">${fmt(r.i)}</td><td class="num rate-bad">${pct(r.ir)}</td></tr>`).join('')||'<tr><td colspan="4">No shops meet volume threshold</td></tr>'}</tbody></table>`}
-function update(){const a=filtered(),m=metrics(a);$('kTotal').textContent=fmt(m.t);$('kComplete').textContent=pct(m.cr);$('kCompleteCount').textContent=fmt(m.c)+' complete';$('kIncomplete').textContent=pct(m.ir);$('kIncompleteCount').textContent=fmt(m.i)+' incomplete';$('kXFlag').textContent=pct(m.t?m.x/m.t:0);$('kXCount').textContent=fmt(m.x)+' X Flag';$('kIncompleteDocs').textContent=fmt(m.i);trend($('trendChart'),a);
-const rg=Object.entries(group(a,'region')).map(([label,rows])=>({label,value:metrics(rows).ir,display:pct(metrics(rows).ir)})).sort((x,y)=>y.value-x.value).slice(0,6);bars($('regionChart'),rg,.22);
-const inc=a.filter(d=>d.is_incomplete);const rs=Object.entries(group(inc,'reason')).map(([label,rows])=>({label,value:inc.length?rows.length/inc.length:0,display:pct(inc.length?rows.length/inc.length:0)})).sort((x,y)=>y.value-x.value).slice(0,6);bars($('reasonChart'),rs);
-const shops=shopRows(a,50,10);table($('shopTable'),shops,7);table($('drillShopTable'),shopRows(a,20,100),100);
-$('dTotal').textContent=fmt(m.t);$('dComplete').textContent=fmt(m.c)+' ('+pct(m.cr)+')';$('dIncomplete').textContent=fmt(m.i)+' ('+pct(m.ir)+')';$('dX').textContent=fmt(m.x);bars($('drillReason'),rs);
-$('msgKey').textContent=`ตรวจทั้งหมด ${fmt(m.t)} เอกสาร | Complete ${pct(m.cr)} | Incomplete ${pct(m.ir)}`;
-const top2=rs.slice(0,2),sum=top2.reduce((s,x)=>s+x.value,0);$('msgCause').textContent=top2.length?`${top2.map(x=>x.label).join(' + ')} = ${pct(sum)} ของ Incomplete`:'ไม่มีเอกสารไม่สมบูรณ์';$('msgFocus').textContent=rg.length?`เร่งติดตาม ${rg[0].label} ที่ Incomplete ${rg[0].display}${shops.length?' และ '+shops[0].name:''}`:'—'}
-
-$('fMonth').addEventListener('change',()=>{refreshDependentFilters();update()});
-$('fRegion').addEventListener('change',()=>{refreshDependentFilters();update()});
-$('fChannel').addEventListener('change',update);
-$('fOrder').addEventListener('change',update);
-$('fShop').addEventListener('change',update);
-$('resetBtn').onclick=()=>{['fMonth','fRegion','fChannel','fOrder','fShop'].forEach(id=>$(id).value='');refreshDependentFilters();update()};
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active')});
-update();
+function renderRegionCards(rows){
+ const regs=["BMA","UPC1","UPC2"];
+ $("regionCards").innerHTML=regs.map(rr=>{
+   const s=statusStats(rows.filter(r=>r.rr===rr)), ir=pct(s.incomplete,s.cases), cr=pct(s.complete,s.cases);
+   const tag=ir>=10?"RISK":ir<7?"BEST":"WATCH";
+   return `<div class="region-card ${tag==="RISK"?"risk":tag==="BEST"?"best":""}">
+     <span class="tag">${tag}</span><div class="rname">${rr}</div>
+     <div class="region-metrics">
+       <div class="metric"><b>${fmt(s.cases)}</b><span>CASES</span></div>
+       <div class="metric"><b>${fmt(s.incomplete)}</b><span>INCOMPLETE</span></div>
+       <div class="metric"><b>${pct1(ir)}</b><span>INCOMPLETE RATE</span></div>
+     </div>
+     <div style="margin-top:10px;font-size:11px;color:#d9eaff">Complete ${pct1(cr)} • X Flag ${pct1(pct(s.xflag,s.cases))}</div>
+   </div>`;
+ }).join("");
+}
+function renderTrend(rows){
+ const months=["July'26","Aug'26"].filter(m=>rows.some(r=>r.m===m));
+ $("trend").innerHTML=months.map(m=>{
+   const s=statusStats(rows.filter(r=>r.m===m)), c=pct(s.complete,s.cases), i=pct(s.incomplete,s.cases), x=pct(s.xflag,s.cases);
+   return `<div style="margin-bottom:7px;font-weight:700;font-size:12px">${m} <span style="float:right;color:#7b8ca0">${fmt(s.cases)} cases</span></div>
+   <div class="trend-row"><span class="trend-label">Complete</span><div class="bar-bg"><div class="bar complete" style="width:${c}%"></div></div><span class="trend-val good">${pct1(c)}</span></div>
+   <div class="trend-row"><span class="trend-label">Incomplete</span><div class="bar-bg"><div class="bar incomplete" style="width:${i}%"></div></div><span class="trend-val bad">${pct1(i)} / ${fmt(s.incomplete)}</span></div>
+   <div class="trend-row"><span class="trend-label">X Flag</span><div class="bar-bg"><div class="bar xflag" style="width:${x}%"></div></div><span class="trend-val warn">${pct1(x)} / ${fmt(s.xflag)}</span></div>`;
+ }).join("");
+}
+function groupShop(rows){
+ const m=new Map();
+ rows.forEach(r=>{const k=r.sh; if(!m.has(k))m.set(k,{sh:k,ar:r.ar,rr:r.rr,c:0,i:0,x:0});const o=m.get(k);o.c++;if(r.st!=="สมบูรณ์")o.i++;if(r.st==="ไม่สมบูรณ์ (X Flag)")o.x++;});
+ return [...m.values()].map(o=>({...o,ir:pct(o.i,o.c),cr:pct(o.c-o.i,o.c)}));
+}
+function rankBars(items, mode){
+ const max=Math.max(...items.map(x=>mode==="rate"?x.ir:x.i),1);
+ return `<div class="rank">${items.map((x,idx)=>`<div class="rank-item">
+   <div class="rank-no">${idx+1}</div><div><div class="rank-name" title="${esc(x.name||x.sh)}">${esc(x.name||x.sh)}</div><div class="rank-bar"><i style="width:${((mode==="rate"?x.ir:x.i)/max*100).toFixed(1)}%"></i></div></div>
+   <div class="rank-rate">${mode==="rate"?pct1(x.ir):fmt(x.i)}</div></div>`).join("")}</div>`;
+}
+function renderRegionRank(rows){
+ const a=["BMA","UPC1","UPC2"].map(rr=>{const s=statusStats(rows.filter(r=>r.rr===rr));return {name:rr,ir:pct(s.incomplete,s.cases),i:s.incomplete,c:s.cases}}).filter(x=>x.c);
+ a.sort((x,y)=>y.ir-x.ir);
+ $("regionRank").innerHTML=rankBars(a,"rate");
+}
+function renderShopTables(rows){
+ const shops=groupShop(rows).filter(x=>x.c>=50);
+ const top=[...shops].sort((a,b)=>b.cr-a.cr).slice(0,7);
+ const prob=[...shops].sort((a,b)=>b.i-a.i).slice(0,7);
+ $("topShops").innerHTML=top.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Shop</th><th>Cases</th><th>Incomplete</th><th>Rate</th></tr></thead><tbody>${top.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sh)}</td><td class="num">${fmt(x.c)}</td><td class="num bad">${fmt(x.i)}</td><td class="num good">${pct1(x.cr)}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มี Shop ที่ถึง 50 Cases ใน Scope นี้</div>";
+ $("problemShops").innerHTML=prob.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Shop</th><th>Cases</th><th>Incomplete</th><th>Rate</th></tr></thead><tbody>${prob.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.sh)}</td><td class="num">${fmt(x.c)}</td><td class="num bad">${fmt(x.i)}</td><td class="num bad">${pct1(x.ir)}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มี Shop ที่ถึง 50 Cases ใน Scope นี้</div>";
+}
+function renderEmployee(rows){
+ const m=new Map();
+ rows.forEach(r=>{const k=r.emp||"ไม่ระบุ";if(!m.has(k))m.set(k,{e:k,c:0,i:0,x:0,sh:new Set(),ar:new Set()});const o=m.get(k);o.c++;if(r.st!=="สมบูรณ์")o.i++;if(r.st==="ไม่สมบูรณ์ (X Flag)")o.x++;o.sh.add(r.sh);o.ar.add(r.ar)});
+ let a=[...m.values()].filter(x=>x.c>=5).map(x=>({...x,ir:pct(x.i,x.c),cr:pct(x.c-x.i,x.c),shops:[...x.sh],areas:[...x.ar]})).sort((a,b)=>b.i-a.i);
+ $("employeeTable").innerHTML=a.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Employee</th><th>Shop</th><th>Cases</th><th>Incomplete</th><th>Rate</th></tr></thead><tbody>${a.slice(0,80).map((x,i)=>`<tr class="emp-row" data-emp="${esc(x.e)}" style="cursor:pointer;background:${selectedEmployee===x.e?'#eef7ff':''}"><td>${i+1}</td><td>${esc(x.e)}</td><td>${esc(x.shops.length===1?x.shops[0]:x.shops.length+" shops")}</td><td class="num">${fmt(x.c)}</td><td class="num bad">${fmt(x.i)}</td><td class="num ${x.ir>=10?'bad':'good'}">${pct1(x.ir)}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มีพนักงานที่มีอย่างน้อย 5 Cases ใน Scope นี้</div>";
+ document.querySelectorAll(".emp-row").forEach(el=>el.addEventListener("click",()=>{selectedEmployee=el.dataset.emp;renderPeople(rows)}));
+ // default top employee only for profile if none
+ if(!selectedEmployee && a.length) selectedEmployee=a[0].e;
+}
+function renderPeople(rows){
+ renderEmployee(rows);
+ const empRows=selectedEmployee?rows.filter(r=>r.emp===selectedEmployee):[];
+ const s=statusStats(empRows);
+ $("peopleScope").textContent=`Scope: ${scopeLabel()}${selectedEmployee?" • Employee: "+selectedEmployee:""}`;
+ $("shopProfile").innerHTML=selectedEmployee?`<div class="profile">
+   <div class="box"><span>EMPLOYEE</span><b style="font-size:16px">${esc(selectedEmployee)}</b></div>
+   <div class="box"><span>CASES</span><b>${fmt(s.cases)}</b></div>
+   <div class="box"><span>INCOMPLETE</span><b class="bad">${fmt(s.incomplete)}</b></div>
+   <div class="box"><span>INCOMPLETE RATE</span><b class="bad">${pct1(pct(s.incomplete,s.cases))}</b></div>
+   <div class="box"><span>X FLAG</span><b class="warn">${fmt(s.xflag)}</b></div>
+   <div class="box"><span>COMPLETE RATE</span><b class="good">${pct1(pct(s.complete,s.cases))}</b></div>
+ </div>`:`<div class="scope">เลือกพนักงานจากตารางเพื่อดู Profile</div>`;
+ const rs=empRows.filter(r=>r.st!=="สมบูรณ์");
+ const rc={};rs.forEach(r=>rc[r.reason]=(rc[r.reason]||0)+1);
+ const arr=Object.entries(rc).sort((a,b)=>b[1]-a[1]).slice(0,8);
+ $("employeeRoot").innerHTML=selectedEmployee && arr.length?`<div class="rank">${arr.map(([n,v],i)=>`<div class="rank-item"><div class="rank-no">${i+1}</div><div><div class="rank-name">${esc(n)}</div><div class="rank-bar"><i style="width:${(v/arr[0][1]*100).toFixed(1)}%"></i></div></div><div class="rank-rate bad">${fmt(v)} cases</div></div>`).join("")}</div>`:`<div class="scope">ยังไม่มี Incomplete Case สำหรับพนักงานที่เลือก</div>`;
+}
+function renderRoot(rows){
+ const inc=rows.filter(r=>r.st!=="สมบูรณ์");
+ const cats=uniq(inc.map(r=>r.cat));
+ const sel=$("rootCat");
+ const old=sel.value;
+ sel.innerHTML=['<option value="">All Root Causes</option>',...cats.sort().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`)].join("");
+ sel.value=cats.includes(old)?old:"";
+ const cat=sel.value;
+ const scoped=cat?inc.filter(r=>r.cat===cat):inc;
+ const cm={};scoped.forEach(r=>cm[r.cat]=(cm[r.cat]||0)+1);
+ const mix=Object.entries(cm).sort((a,b)=>b[1]-a[1]);const mx=Math.max(...mix.map(x=>x[1]),1);
+ $("rootMix").innerHTML=mix.length?`<div class="root-mix">${mix.map(([n,v])=>`<div class="mix-row"><div class="name">${esc(n)}</div><div class="mix-bg"><div class="mix-bar" style="width:${(v/mx*100).toFixed(1)}%"></div></div><div class="mix-num">${fmt(v)} • ${pct1(pct(v,scoped.length))}</div></div>`).join("")}</div>`:"<div class='scope'>ไม่มี Incomplete Case</div>";
+ const rm={};scoped.forEach(r=>{if(r.reason&&r.reason!=="ไม่ระบุ")rm[r.reason]=(rm[r.reason]||0)+1});
+ const reasons=Object.entries(rm).sort((a,b)=>b[1]-a[1]).slice(0,12); const rmx=Math.max(...reasons.map(x=>x[1]),1);
+ $("reasonRank").innerHTML=reasons.length?rankBars(reasons.map(x=>({name:x[0],i:x[1]})),"count"):"<div class='scope'>ไม่มี Detailed Reason</div>";
+ // location: region > area > shop, count cases
+ const lm=new Map();scoped.forEach(r=>{const k=`${r.rr}|||${r.ar}|||${r.sh}`;if(!lm.has(k))lm.set(k,{rr:r.rr,ar:r.ar,sh:r.sh,c:0});lm.get(k).c++});
+ const loc=[...lm.values()].sort((a,b)=>b.c-a.c).slice(0,30);
+ $("rootLocation").innerHTML=loc.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Region</th><th>Area</th><th>Shop</th><th class="num">Case</th><th class="num">% of Root</th></tr></thead><tbody>${loc.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.rr)}</td><td>${esc(x.ar)}</td><td>${esc(x.sh)}</td><td class="num bad">${fmt(x.c)}</td><td class="num">${pct1(pct(x.c,scoped.length))}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มีข้อมูล</div>";
+}
+function scopeLabel(){
+ const bits=[]; if(filters.m)bits.push(filters.m); if(filters.rr)bits.push(filters.rr); if(filters.ar)bits.push(filters.ar); if(filters.ch)bits.push(filters.ch); if(filters.ot)bits.push(filters.ot); if(filters.sh)bits.push(filters.sh);
+ return bits.length?bits.join(" • "):"All W&W";
+}
+function renderAll(){
+ const rows=currentRows();
+ renderKpis(rows);renderRegionCards(rows);renderTrend(rows);renderRegionRank(rows);renderShopTables(rows);
+ $("scopeText").textContent=`${scopeLabel()} • ${fmt(rows.length)} cases`;
+ $("footerCount").textContent=`W&W scope: ${fmt(rows.length)} / 41,596 cases`;
+ renderPeople(rows);renderRoot(rows);
+}
+$("rootCat").addEventListener("change",()=>renderRoot(currentRows()));
+refreshFilters();renderAll();
