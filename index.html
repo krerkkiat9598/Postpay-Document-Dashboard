@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>W&W Postpay | Document Quality Executive Dashboard</title>
+<title>W&W Postpay | Document Quality Executive Dashboard V6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
   <div class="brand">WIRE & WIRELESS <span>•</span> POSTPAY</div>
   <div class="hero-title">Document Quality Dashboard</div>
   <div class="hero-sub">ผลการตรวจเอกสาร Postpay | 1 Jul – 17 Aug 2026 | Source: DPS RAW DATA</div>
-  <div class="hero-badge">EXECUTIVE<br><small>CONTROL TOWER</small></div>
+  <div class="hero-badge">EXECUTIVE<br><small>CONTROL TOWER • V6</small></div>
 </header>
 
 <section class="filters">
@@ -38,6 +38,9 @@
 <main>
 <section id="overview" class="tabpage active">
   <div class="section-head"><div><span class="eyebrow">EXECUTIVE SNAPSHOT</span><h2>คุณภาพเอกสาร Postpay ตาม Region</h2></div><div class="scope" id="scopeText"></div></div>
+
+  <div class="executive-highlight" id="overviewHighlight"></div>
+
   <div class="kpis" id="kpis"></div>
   <div class="region-grid" id="regionCards"></div>
 
@@ -66,14 +69,20 @@
 
 <section id="people" class="tabpage">
   <div class="section-head"><div><span class="eyebrow">DRILL-DOWN</span><h2>Shop → Employee Performance</h2></div><div class="scope" id="peopleScope"></div></div>
-  <div class="callout">เลือก <b>Region → Area → Shop</b> ด้านบน แล้วตารางด้านล่างจะเหลือเฉพาะพนักงานของ Scope นั้น • เรียง <b>Incomplete Cases มากที่สุด</b> เป็นอันดับแรก</div>
+
+  <div class="executive-highlight" id="peopleHighlight"></div>
+
+  <div class="callout">เลือก <b>Region → Area → Shop</b> ด้านบน แล้วตารางจะเหลือเฉพาะพนักงานของ Scope นั้น • Ranking เรียง <b>Incomplete Cases มากที่สุด</b> • รายการ <b>ไม่ระบุพนักงาน</b> จะแยกออกจาก Ranking</div>
+
+  <div id="unassignedCard" class="unassigned-card"></div>
+
   <div class="two-col">
     <div class="panel">
-      <div class="panel-title"><span>EMPLOYEE RANKING</span><small>ขั้นต่ำ 5 Cases</small></div>
+      <div class="panel-title"><span>EMPLOYEE RANKING</span><small>เฉพาะพนักงานที่ระบุชื่อ • ขั้นต่ำ 5 Cases</small></div>
       <div id="employeeTable"></div>
     </div>
     <div class="panel">
-      <div class="panel-title"><span>SHOP PROFILE</span><small>ภาพรวม Scope ปัจจุบัน</small></div>
+      <div class="panel-title"><span>EMPLOYEE PROFILE</span><small>พนักงานที่เลือก</small></div>
       <div id="shopProfile"></div>
     </div>
   </div>
@@ -85,26 +94,31 @@
 
 <section id="root" class="tabpage">
   <div class="section-head"><div><span class="eyebrow">PROBLEM SOLVING</span><h2>Root Cause → Area → Shop</h2></div><div class="scope" id="rootScope"></div></div>
+
+  <div class="executive-highlight" id="rootHighlight"></div>
+
   <div class="root-controls"><label>Root Cause Category</label><select id="rootCat"></select></div>
+  <div class="reason-filter-note" id="reasonFilterNote">คลิก Detailed Reason ด้านขวา เพื่อดูว่าเหตุผลนั้นเกิดที่ Region / Area / Shop ใดมากที่สุด</div>
+
   <div class="two-col">
     <div class="panel">
-      <div class="panel-title"><span>ROOT CAUSE MIX</span><small>จำนวน Case</small></div>
+      <div class="panel-title"><span>ROOT CAUSE MIX</span><small>จำนวน Case + %</small></div>
       <div id="rootMix"></div>
     </div>
     <div class="panel">
-      <div class="panel-title"><span>TOP DETAILED REASONS</span><small>จำนวน Case</small></div>
+      <div class="panel-title"><span>TOP DETAILED REASONS</span><small>คลิกเพื่อ Drill-down Location</small></div>
       <div id="reasonRank"></div>
     </div>
   </div>
   <div class="panel">
-    <div class="panel-title"><span>WHERE DOES THIS ROOT CAUSE HAPPEN?</span><small>Region → Area → Shop</small></div>
+    <div class="panel-title"><span>WHERE DOES THIS ROOT CAUSE HAPPEN?</span><small>Region → Area → Shop • Cases + %</small></div>
     <div id="rootLocation"></div>
   </div>
 </section>
 </main>
 
 <footer>
-  <span>W&W • POSTPAY DOCUMENT QUALITY</span>
+  <span>W&W • POSTPAY DOCUMENT QUALITY • EXECUTIVE V6</span>
   <span id="footerCount"></span>
 </footer>
 </div>

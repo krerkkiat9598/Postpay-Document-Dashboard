@@ -1,20 +1,24 @@
-# W&W Postpay Document Quality Executive Dashboard V5
+# W&W Postpay Document Quality Executive Dashboard V6
 
-Source: DPS_01July - 17Aug2026 sent 26.08.26(1).xlsb
+Source: `DPS_01July - 17Aug2026 sent 26.08.26(1).xlsb`
 
-Scope: บริษัท ไวร์เออ แอนด์ ไวร์เลส จำกัด (W&W) only.
-The source file contains 43,485 rows; 41,596 rows belong to W&W and are used in this dashboard. Other company records are excluded.
+## V6 enhancements
+- Executive Text Highlight บนทุกหน้า และเปลี่ยนตาม Filter
+- Quality Trend แสดง July → August แม้เลือก Month เดียว โดย Highlight เดือนที่เลือก
+- Employee Ranking แยก `ไม่ระบุพนักงาน` ออกจาก Ranking และแสดง Data Quality Alert
+- Employee Highlight: Top Incomplete Employee + Case + Rate
+- Root Cause Highlight: Main Root Cause + Top Detailed Reason + Where to Focus
+- Detailed Reason คลิกเพื่อ Drill-down Region → Area → Shop
+- ทุก Ranking สำคัญแสดงทั้ง Case และ %
 
-## Features
-- Executive overview by BMA / UPC1 / UPC2
-- Complete, Incomplete and X Flag counts + rates
-- Cascading filters: Month → Region → Area → Channel → Order Type → Shop
-- Top Performance Shops and Top Problem Shops
-- Shop → Employee drill-down
-- Employee ranking by Incomplete Cases
-- Root Cause Category + Detailed Reason
-- Root Cause location ranking: Region → Area → Shop
-- Executive navy / electric-blue 5G-inspired theme
+## Deployment
+อัปโหลดไฟล์ทั้ง 5 ไฟล์ไปทับใน GitHub repository เดิม แล้ว Commit:
+- `index.html`
+- `style.css`
+- `app.js`
+- `data.js`
+- `README.md`
 
-## GitHub Pages
-Upload `index.html`, `style.css`, `app.js`, and `data.js` to the repository root.
+GitHub Pages URL เดิมจะอัปเดตอัตโนมัติหลัง Deploy
+
+> หมายเหตุ: data.js มีชื่อพนักงานจริง จึงควรใช้งานภายใต้นโยบายข้อมูลของบริษัท และไม่ควรเผยแพร่ Public หากไม่ได้รับอนุญาต
