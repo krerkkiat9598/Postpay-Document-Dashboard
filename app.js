@@ -76,38 +76,81 @@ function topRoot(rows){
 function renderOverviewHighlight(rows){
  const s=statusStats(rows), root=topRoot(rows);
  const scope=scopeLabel();
- const isAll=!filters.rr && !filters.ar && !filters.sh && !filters.ch && !filters.ot;
- const isRegion=!!filters.rr && !filters.ar && !filters.sh;
- const shops=groupShop(rows).filter(x=>x.c>=50);
- const perf=[...shops].sort((a,b)=>b.cr-a.cr || b.c-a.c)[0];
- const prob=[...shops].sort((a,b)=>b.i-a.i || b.ir-a.ir)[0];
+ const isAll=!filters.m && !filters.rr && !filters.ar && !filters.sh && !filters.ch && !filters.ot;
+ const isRegion=!!filters.rr && !filters.ar && !filters.sh && !filters.ch && !filters.ot;
+ const isArea=!!filters.ar && !filters.sh && !filters.ch && !filters.ot;
+ const isShop=!!filters.sh;
+ const target=95;
+ const cr=pct(s.complete,s.cases), ir=pct(s.incomplete,s.cases), xr=pct(s.xflag,s.cases);
 
- let scopeTitle = isAll ? "ภาพรวม W&W" : `ข้อมูลตาม Scope ที่เลือก: ${scope}`;
- let qualityText = `ตรวจทั้งหมด <b>${fmt(s.cases)}</b> รายการ • ผ่าน <b>${pct1(pct(s.complete,s.cases))}</b> (${fmt(s.complete)} รายการ) • ไม่สมบูรณ์ <b>${pct1(pct(s.incomplete,s.cases))}</b> (${fmt(s.incomplete)} รายการ)`;
- if(isRegion){
-   const rs=statusStats(rows.filter(r=>r.rr===filters.rr));
-   qualityText += ` • <b>${esc(filters.rr)}</b> เป็นข้อมูลของ Region ที่เลือกเท่านั้น`;
- } else if(!isAll){
-   qualityText += ` • ตัวเลขทั้งหมดเป็นข้อมูลของ <b>${esc(scope)}</b> เท่านั้น`;
- }
+ // Everything below is calculated from `rows`, i.e. the CURRENT selected scope only.
+ const incompleteRows=rows.filter(r=>r.st!=="สมบูรณ์");
+ const reasonMap={};
+ incompleteRows.forEach(r=>{
+   const k=r.reason && r.reason!=="ไม่ระบุ" ? r.reason : "ไม่ระบุสาเหตุ";
+   reasonMap[k]=(reasonMap[k]||0)+1;
+ });
+ const topReasons=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
+ const topReason=topReasons[0];
+ const top3Reasons=topReasons.slice(0,3);
 
- const focusText = root
-   ? `Root Cause หลักคือ <b>${esc(root.name)}</b> จำนวน <b>${fmt(root.n)}</b> รายการ คิดเป็น <b>${pct1(root.share)}</b> ของ Incomplete Cases ใน Scope นี้`
-   : "ยังไม่พบ Incomplete Case ใน Scope นี้";
+ const shops=groupShop(rows);
+ const topIncompleteShop=[...shops].sort((a,b)=>b.i-a.i || b.ir-a.ir || b.c-a.c)[0];
+ const bestShop=[...shops].filter(x=>x.c>=5).sort((a,b)=>b.cr-a.cr || b.c-a.c)[0];
 
- const performanceText = perf
-   ? `สาขาที่มี Complete Rate สูงสุดใน Scope นี้คือ <b>${esc(perf.sh)}</b> • Complete <b>${pct1(perf.cr)}</b> จาก ${fmt(perf.c)} รายการ`
-   : "ยังไม่มีสาขาที่มีข้อมูลตั้งแต่ 50 รายการเพื่อจัดอันดับ";
+ const scopeTitle=isAll
+   ? "ภาพรวม W&W"
+   : `EXECUTIVE HIGHLIGHT • ${scope}`;
 
- const problemText = prob
-   ? `สาขาที่มี Incomplete Cases มากที่สุดใน Scope นี้คือ <b>${esc(prob.sh)}</b> • ${fmt(prob.i)} รายการ (${pct1(prob.ir)})`
-   : "ยังไม่มีสาขาที่เข้าเกณฑ์สำหรับการจัดอันดับ";
+ const levelText=isShop
+   ? `ระดับสาขา <b>${esc(filters.sh)}</b>`
+   : isArea
+     ? `ระดับ Area <b>${esc(filters.ar)}</b>`
+     : isRegion
+       ? `ระดับ Region <b>${esc(filters.rr)}</b>`
+       : isAll
+         ? "ภาพรวมทั้งหมด"
+         : `Scope <b>${esc(scope)}</b>`;
 
- $("overviewHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">EXECUTIVE HIGHLIGHT • ${scopeTitle}</div></div>
+ const qualityText = s.cases
+   ? `ตรวจ <b>${fmt(s.cases)}</b> รายการ • Complete <b>${pct1(cr)}</b> (${fmt(s.complete)} รายการ) • Incomplete <b>${pct1(ir)}</b> (${fmt(s.incomplete)} รายการ) • X Flag <b>${pct1(xr)}</b> (${fmt(s.xflag)} รายการ) • เทียบ Target 95%: <b>${pct1(cr-target)}</b>`
+   : "ไม่พบข้อมูลใน Scope ที่เลือก";
+
+ const qualityMessage = !s.cases
+   ? "กรุณาปรับ Filter เพื่อดูข้อมูล"
+   : cr>=target
+     ? `คุณภาพอยู่ <b>เหนือ Target ${pct1(cr-target)}</b>`
+     : `คุณภาพยัง <b>ต่ำกว่า Target ${pct1(target-cr)}</b>`;
+
+ const reasonText = topReason
+   ? `Root Cause อันดับ 1 คือ <b>${esc(topReason[0])}</b> จำนวน <b>${fmt(topReason[1])}</b> รายการ คิดเป็น <b>${pct1(pct(topReason[1],s.incomplete))}</b> ของ Incomplete ทั้งหมด`
+   : "ไม่พบ Incomplete Case จึงไม่มี Root Cause ให้ติดตาม";
+
+ const reasonDetail = top3Reasons.length
+   ? `Top 3 สาเหตุ: ${top3Reasons.map(([n,v],i)=>`<b>${i+1}) ${esc(n)}</b> ${fmt(v)} รายการ (${pct1(pct(v,s.incomplete))})`).join(" • ")}`
+   : "";
+
+ const shopText = topIncompleteShop
+   ? isShop
+     ? `สาขานี้มี Incomplete <b>${fmt(topIncompleteShop.i)}</b> รายการ จาก ${fmt(topIncompleteShop.c)} รายการ (${pct1(topIncompleteShop.ir)})`
+     : `Shop ที่มี Incomplete มากที่สุดใน Scope คือ <b>${esc(topIncompleteShop.sh)}</b> จำนวน <b>${fmt(topIncompleteShop.i)}</b> รายการ (${pct1(topIncompleteShop.ir)})`
+   : "ไม่มี Shop ที่มี Incomplete Case";
+
+ const performanceText = bestShop
+   ? `Shop ที่มี Complete Rate สูงสุดคือ <b>${esc(bestShop.sh)}</b> • Complete <b>${pct1(bestShop.cr)}</b> จาก ${fmt(bestShop.c)} รายการ`
+   : "ยังไม่มี Shop ที่มีข้อมูลเพียงพอสำหรับการเปรียบเทียบ";
+
+ const actionText = !s.incomplete
+   ? `Scope นี้ไม่พบ Incomplete Case — ให้รักษาระดับคุณภาพและติดตามผลต่อเนื่อง`
+   : `${reasonText} → ควรเริ่มตรวจสอบ <b>${topIncompleteShop?esc(topIncompleteShop.sh):"จุดที่เกี่ยวข้อง"}</b> และทบทวนรายการ Incomplete ทีละ Case`;
+
+ const scopeNote = `ข้อมูลทุกตัวใน Executive Highlight นี้คำนวณจาก <b>${esc(scope)}</b> เท่านั้น`;
+
+ $("overviewHighlight").innerHTML=`<div class="highlight-head"><div class="highlight-icon">★</div><div class="highlight-title">${scopeTitle}</div></div>
  <div class="highlight-grid">
-  <div class="highlight-item risk"><b>1. สถานการณ์คุณภาพ:</b> ${qualityText}. ${prob?`<br><b>จุดที่ต้องติดตาม:</b> ${problemText}`:""}</div>
-  <div class="highlight-item goodbox"><b>2. ผลงานเด่น:</b> ${isAll?`ระบบจะเปรียบเทียบทุก Region/Shop ภายใน Scope นี้`:isRegion?`Region <b>${esc(filters.rr)}</b> ถูกแสดงเป็น Scope หลัก`:`กำลังดูเฉพาะ <b>${esc(scope)}</b>`}. ${performanceText}</div>
-  <div class="highlight-item focus"><b>3. ประเด็นที่ควรดำเนินการ:</b> ${focusText}. ${prob?`<br><b>จุดเริ่มต้น:</b> ตรวจสอบ ${esc(prob.sh)} และสาเหตุหลักใน Scope นี้`:""}</div>
+  <div class="highlight-item risk"><b>1. QUALITY STATUS — สถานการณ์คุณภาพ</b><br>${levelText}<br>${qualityText}<br><b>${qualityMessage}</b><br><span style="font-size:11px;color:#5d7087">${scopeNote}</span></div>
+  <div class="highlight-item goodbox"><b>2. PERFORMANCE — ผลงานและจุดเปรียบเทียบ</b><br>${shopText}<br>${performanceText}${!isShop && topIncompleteShop?`<br><b>จุดที่ต้องจับตา:</b> ${esc(topIncompleteShop.sh)} มี ${fmt(topIncompleteShop.i)} Incomplete Case`:""}</div>
+  <div class="highlight-item focus"><b>3. ROOT CAUSE — สาเหตุที่ต้องแก้</b><br>${reasonText}<br>${reasonDetail}<br><b>Management Action:</b> ${actionText}</div>
  </div>`;
 }
 function renderKpis(rows){
