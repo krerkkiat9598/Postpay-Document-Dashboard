@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>BMA I Focus Dashboard</title>
+
+  <link rel="stylesheet" href="bma1.css">
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- =========================
+         HEADER
+    ========================== -->
+    <header class="topbar">
+
+      <div>
+        <div class="eyebrow">W&W EXECUTIVE DASHBOARD</div>
+
+        <h1>BMA I Focus Dashboard</h1>
+
+        <div id="subtitle">
+          BMA I (North West) • Net Amount + QTY Performance
+        </div>
+      </div>
+
+      <div class="brand">
+        BMA I FOCUS
+      </div>
+
+    </header>
+
+
+    <!-- =========================
+         FILTERS
+    ========================== -->
+    <section class="filters">
+
+      <div class="filter">
+        <label>YEAR</label>
+        <select id="fYear"></select>
+      </div>
+
+      <div class="filter">
+        <label>MONTH</label>
+        <select id="fMonth"></select>
+      </div>
+
+      <div class="filter">
+        <label>CHANNEL</label>
+        <select id="fChannel"></select>
+      </div>
+
+      <div class="filter">
+        <label>PRODUCT</label>
+        <select id="fProduct"></select>
+      </div>
+
+      <div class="filter wide">
+        <label>SHOP</label>
+        <select id="fShop"></select>
+      </div>
+
+      <button id="resetBtn" class="reset-btn">
+        Reset
+      </button>
+
+      <a href="index.html" class="back-btn">
+        ← Company Overview
+      </a>
+
+    </section>
+
+
+    <!-- =========================
+         KPI CARDS
+    ========================== -->
+    <main>
+
+      <section class="hero-grid">
+
+        <div class="kpi amount">
+          <span>NET AMOUNT</span>
+          <strong id="kAmount">-</strong>
+          <small>
+            Target Net Amount
+            <b id="kAmountTarget">-</b>
+          </small>
+        </div>
+
+
+        <div class="kpi amount">
+          <span>NET AMOUNT ACHIEVEMENT</span>
+          <strong id="kAmountAch">-</strong>
+          <small>
+            Net Amount Gap
+            <b id="kAmountGap">-</b>
+          </small>
+        </div>
+
+
+        <div class="kpi qty">
+          <span>QTY</span>
+          <strong id="kQty">-</strong>
+          <small>
+            Target QTY
+            <b id="kQtyTarget">-</b>
+          </small>
+        </div>
+
+
+        <div class="kpi qty">
+          <span>QTY ACHIEVEMENT</span>
+          <strong id="kQtyAch">-</strong>
+          <small>
+            QTY Gap
+            <b id="kQtyGap">-</b>
+          </small>
+        </div>
+
+
+        <div class="kpi">
+          <span>ASP</span>
+          <strong id="kAsp">-</strong>
+          <small>
+            Net Amount / QTY
+          </small>
+        </div>
+
+
+        <div class="kpi status-card">
+          <span>STATUS</span>
+          <strong id="kStatus">-</strong>
+          <small id="kStatusNote">
+            -
+          </small>
+        </div>
+
+      </section>
+
+
+      <!-- =========================
+           EXECUTIVE INSIGHT
+      ========================== -->
+      <section class="insight">
+
+        <div class="section-label">
+          EXECUTIVE INSIGHT
+        </div>
+
+        <div id="insightText">
+          -
+        </div>
+
+      </section>
+
+
+      <!-- =========================
+           TREND
+      ========================== -->
+      <section class="two-column">
+
+        <div class="panel">
+
+          <div class="panel-header">
+            <h2>Monthly Net Amount Performance</h2>
+
+            <span>
+              Actual vs Target
+            </span>
+          </div>
+
+          <div id="trendChart" class="chart">
+            -
+          </div>
+
+        </div>
+
+
+        <div class="panel">
+
+          <div class="panel-header">
+            <h2>Monthly QTY Performance</h2>
+
+            <span>
+              Actual vs Target
+            </span>
+          </div>
+
+          <div id="volumeChart" class="chart">
+            -
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =========================
+           PRODUCT + SHOP
+      ========================== -->
+      <section class="two-column">
+
+        <!-- PRODUCT -->
+        <div class="panel">
+
+          <div class="panel-header">
+
+            <h2>Product Performance</h2>
+
+            <span>
+              Net Amount + QTY • Click Product for Deep Dive
+            </span>
+
+          </div>
+
+          <div id="productTable">
+            -
+          </div>
+
+        </div>
+
+
+        <!-- TOP / FOCUS SHOP -->
+        <div class="panel">
+
+          <div class="panel-header">
+
+            <h2>Shop Performance</h2>
+
+            <span>
+              Net Amount + QTY + Gap
+            </span>
+
+          </div>
+
+          <div id="shopTable">
+            -
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =========================
+           EXECUTIVE ACTION
+      ========================== -->
+      <section class="action-grid">
+
+        <div class="message-card">
+
+          <div class="section-label">
+            KEY MESSAGE
+          </div>
+
+          <div id="keyMessage">
+            -
+          </div>
+
+        </div>
+
+
+        <div class="message-card">
+
+          <div class="section-label">
+            MANAGEMENT ACTION
+          </div>
+
+          <div id="actionMessage">
+            -
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <!-- =========================
+       DATA + LOGIC
+  ========================== -->
+
+  <script src="data.js"></script>
+  <script src="bma1.js"></script>
+
+
+<script>
+(function(){
+  const links = {
+    "DEVICE":"product_deep_dive.html",
+    "GIA":"product_deep_dive.html",
+    "POSTPAID":"postpay_deep_dive.html",
+    "TRUE ONLINE":"tol_deep_dive.html",
+    "PREPAID":"prepaid_deep_dive.html",
+    "TRUE VISION":"tvs_deep_dive.html"
+  };
+  function decorate(){
+    const table = document.getElementById("productTable");
+    if(!table) return;
+    table.querySelectorAll("tbody tr").forEach(tr=>{
+      const cell = tr.querySelector("td");
+      if(!cell || cell.dataset.deepLinked==="1") return;
+      const name = cell.textContent.trim();
+      const href = links[name];
+      if(!href) return;
+      const a = document.createElement("a");
+      a.href = href;
+      a.textContent = name;
+      a.title = "Open Product Deep Dive";
+      a.style.color = "inherit";
+      a.style.textDecoration = "none";
+      a.style.fontWeight = "700";
+      cell.textContent = "";
+      cell.appendChild(a);
+      cell.dataset.deepLinked = "1";
+    });
+  }
+  const target = document.getElementById("productTable");
+  if(target) new MutationObserver(decorate).observe(target,{childList:true,subtree:true});
+  setTimeout(decorate,300);
+})();
+</script>
+
+</body>
+</html>

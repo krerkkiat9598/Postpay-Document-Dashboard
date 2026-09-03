@@ -2,125 +2,104 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>W&W Postpay | Document Quality Executive Dashboard V6</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales Executive Dashboard</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="page">
-<header class="hero">
-  <div class="hero-grid"></div>
-  <div class="brand">WIRE & WIRELESS <span>•</span> POSTPAY</div>
-  <div class="hero-title">Document Quality Dashboard</div>
-  <div class="hero-sub">ผลการตรวจเอกสาร Postpay | 1 Jul – 17 Aug 2026 | Source: DPS RAW DATA</div>
-  <div class="hero-badge">EXECUTIVE<br><small>CONTROL TOWER • V6</small></div>
-</header>
-
-<section class="filters">
-  <div class="filter"><label>Month</label><select id="month"></select></div>
-  <div class="filter"><label>Region</label><select id="region"></select></div>
-  <div class="filter"><label>Area</label><select id="area"></select></div>
-  <div class="filter"><label>Channel</label><select id="channel"></select></div>
-  <div class="filter"><label>Order Type</label><select id="order"></select></div>
-  <div class="filter wide"><label>Shop</label><select id="shop"></select></div>
-  <button id="reset">RESET</button>
-</section>
-
-<nav class="tabs">
- <button class="tab active" data-tab="overview">01 Executive Overview</button>
- <button class="tab" data-tab="people">02 Shop & Employee</button>
- <button class="tab" data-tab="root">03 Root Cause</button>
-</nav>
-
-<main>
-<section id="overview" class="tabpage active">
-  <div class="section-head"><div><span class="eyebrow">EXECUTIVE SNAPSHOT</span><h2>คุณภาพเอกสาร Postpay ตาม Region</h2></div><div class="scope" id="scopeText"></div></div>
-
-  <div class="executive-highlight" id="overviewHighlight"></div>
-
-  <div class="kpis" id="kpis"></div>
-  <div class="region-grid" id="regionCards"></div>
-
-  <div class="two-col">
-    <div class="panel">
-      <div class="panel-title"><span>QUALITY TREND</span><small>Complete / Incomplete / X Flag</small></div>
-      <div id="trend" class="trend"></div>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">W&W EXECUTIVE DASHBOARD</div>
+      <h1>Sales Executive Dashboard</h1>
+      <div id="subtitle">Company Overview • Net Amount + QTY Performance</div>
     </div>
-    <div class="panel">
-      <div class="panel-title"><span>REGION RANKING</span><small>เรียงจาก Incomplete Rate สูง → ต่ำ</small></div>
-      <div id="regionRank"></div>
-    </div>
-  </div>
+    <div class="brand">SALES PERFORMANCE</div>
+    <a href="bma1.html" class="back-btn" style="text-decoration:none;">→ BMA I Focus</a>
+  </header>
 
-  <div class="two-col">
-    <div class="panel">
-      <div class="panel-title"><span>TOP PERFORMANCE SHOPS</span><small>ขั้นต่ำ 50 Cases • Complete Rate สูงสุด</small></div>
-      <div id="topShops"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-title"><span>TOP PROBLEM SHOPS</span><small>ขั้นต่ำ 50 Cases • Incomplete Cases สูงสุด</small></div>
-      <div id="problemShops"></div>
-    </div>
-  </div>
-</section>
+  <section class="filters">
+    <div class="filter"><label>Year</label><select id="fYear"></select></div>
+    <div class="filter"><label>Month</label><select id="fMonth"></select></div>
+    <div class="filter"><label>Region</label><select id="fRegion"></select></div>
+    <div class="filter"><label>Area</label><select id="fArea"></select></div>
+    <div class="filter"><label>Channel</label><select id="fChannel"></select></div>
+    <div class="filter"><label>Product</label><select id="fProduct"></select></div>
+    <div class="filter wide"><label>Shop</label><select id="fShop"></select></div>
+    <button id="resetBtn">Reset</button>
+  </section>
 
-<section id="people" class="tabpage">
-  <div class="section-head"><div><span class="eyebrow">DRILL-DOWN</span><h2>Shop → Employee Performance</h2></div><div class="scope" id="peopleScope"></div></div>
+  <main>
+    <section class="hero-grid">
+      <div class="kpi amount">
+        <span>NET AMOUNT</span><strong id="kAmount">-</strong>
+        <small>Target Net Amount <b id="kAmountTarget">-</b></small>
+      </div>
+      <div class="kpi amount">
+        <span>NET AMOUNT ACHIEVEMENT</span><strong id="kAmountAch">-</strong>
+        <small>Net Amount Gap <b id="kAmountGap">-</b></small>
+      </div>
+      <div class="kpi volume">
+        <span>QTY</span><strong id="kQty">-</strong>
+        <small>Target QTY <b id="kQtyTarget">-</b></small>
+      </div>
+      <div class="kpi volume">
+        <span>QTY ACHIEVEMENT</span><strong id="kQtyAch">-</strong>
+        <small>QTY Gap <b id="kQtyGap">-</b></small>
+      </div>
+      <div class="kpi">
+        <span>ASP</span><strong id="kAsp">-</strong>
+        <small>Net Amount / QTY</small>
+      </div>
+      <div class="kpi">
+        <span>STATUS</span><strong id="kStatus">-</strong>
+        <small id="kStatusNote">-</small>
+      </div>
+    </section>
 
-  <div class="executive-highlight" id="peopleHighlight"></div>
+    <section class="insight">
+      <div class="section-title">EXECUTIVE INSIGHT</div>
+      <div id="insightText">-</div>
+    </section>
 
-  <div class="callout">เลือก <b>Region → Area → Shop</b> ด้านบน แล้วตารางจะเหลือเฉพาะพนักงานของ Scope นั้น • Ranking เรียง <b>Incomplete Cases มากที่สุด</b> • รายการ <b>ไม่ระบุพนักงาน</b> จะแยกออกจาก Ranking</div>
+    <section class="two-col">
+      <div class="card">
+        <div class="card-head"><h2>Monthly Performance</h2><span>Net Amount vs Target</span></div>
+        <div id="trendChart" class="chart"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>QTY Performance</h2><span>Actual vs Target</span></div>
+        <div id="volumeChart" class="chart"></div>
+      </div>
+    </section>
 
-  <div id="unassignedCard" class="unassigned-card"></div>
+    <section class="two-col">
+      <div class="card">
+        <div class="card-head"><h2>Product Performance</h2><span>Net Amount + QTY</span></div>
+        <div id="productTable"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Area Performance</h2><span>Net Amount Achievement</span></div>
+        <div id="areaTable"></div>
+      </div>
+    </section>
 
-  <div class="two-col">
-    <div class="panel">
-      <div class="panel-title"><span>EMPLOYEE RANKING</span><small>เฉพาะพนักงานที่ระบุชื่อ • ขั้นต่ำ 5 Cases</small></div>
-      <div id="employeeTable"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-title"><span>EMPLOYEE PROFILE</span><small>พนักงานที่เลือก</small></div>
-      <div id="shopProfile"></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><span>EMPLOYEE ROOT CAUSE</span><small>Top reason ของพนักงานที่เลือก</small></div>
-    <div id="employeeRoot"></div>
-  </div>
-</section>
+    <section class="card">
+      <div class="card-head"><h2>Shop Performance</h2><span>Net Amount + QTY + Gap</span></div>
+      <div id="shopTable"></div>
+    </section>
 
-<section id="root" class="tabpage">
-  <div class="section-head"><div><span class="eyebrow">PROBLEM SOLVING</span><h2>Root Cause → Area → Shop</h2></div><div class="scope" id="rootScope"></div></div>
-
-  <div class="executive-highlight" id="rootHighlight"></div>
-
-  <div class="root-controls"><label>Root Cause Category</label><select id="rootCat"></select></div>
-  <div class="reason-filter-note" id="reasonFilterNote">คลิก Detailed Reason ด้านขวา เพื่อดูว่าเหตุผลนั้นเกิดที่ Region / Area / Shop ใดมากที่สุด</div>
-
-  <div class="two-col">
-    <div class="panel">
-      <div class="panel-title"><span>ROOT CAUSE MIX</span><small>จำนวน Case + %</small></div>
-      <div id="rootMix"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-title"><span>TOP DETAILED REASONS</span><small>คลิกเพื่อ Drill-down Location</small></div>
-      <div id="reasonRank"></div>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><span>WHERE DOES THIS ROOT CAUSE HAPPEN?</span><small>Region → Area → Shop • Cases + %</small></div>
-    <div id="rootLocation"></div>
-  </div>
-</section>
-</main>
-
-<footer>
-  <span>W&W • POSTPAY DOCUMENT QUALITY • EXECUTIVE V6</span>
-  <span id="footerCount"></span>
-</footer>
+    <section class="action-grid">
+      <div class="action-card">
+        <div class="section-title">KEY MESSAGE</div>
+        <div id="keyMessage">-</div>
+      </div>
+      <div class="action-card">
+        <div class="section-title">FOCUS / ACTION</div>
+        <div id="actionMessage">-</div>
+      </div>
+    </section>
+  </main>
 </div>
 <script src="data.js"></script>
 <script src="app.js"></script>
