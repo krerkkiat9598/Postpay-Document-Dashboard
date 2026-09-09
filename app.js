@@ -30,8 +30,44 @@ function rowsExcept(key){
 }
 function fillSelect(id, values, value){
   const el=$(id);
-  const opts=['<option value="">All</option>'].concat(values.sort((a,b)=>String(a).localeCompare(String(b),'th')).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`));
-  el.innerHTML=opts.join(""); el.value=value||"";
+
+  let sortedValues;
+
+  if(id === "area"){
+    const roman = {I:1, II:2, III:3, IV:4, V:5};
+
+    sortedValues = [...values].sort((a,b)=>{
+      const ma = String(a).match(/^BMA\s+(I|II|III|IV|V)\b/i);
+      const mb = String(b).match(/^BMA\s+(I|II|III|IV|V)\b/i);
+
+      // BMA I → BMA V
+      if(ma && mb){
+        return roman[ma[1].toUpperCase()] - roman[mb[1].toUpperCase()];
+      }
+
+      // BMA areas มาก่อนรายการอื่น
+      if(ma && !mb) return -1;
+      if(!ma && mb) return 1;
+
+      // รายการอื่นเรียงตามตัวอักษร
+      return String(a).localeCompare(String(b),'th');
+    });
+  }else{
+    sortedValues = [...values].sort((a,b)=>
+      String(a).localeCompare(String(b),'th')
+    );
+  }
+
+  const opts=['<option value="">All</option>']
+    .concat(
+      sortedValues.map(v=>
+        `<option value="${esc(v)}">${esc(v)}</option>`
+      )
+    );
+
+  el.innerHTML=opts.join("");
+  el.value=value||"";
+}
 }
 function refreshFilters(){
   fillSelect("month",uniq(rowsExcept("m").map(r=>r.m)),filters.m);
