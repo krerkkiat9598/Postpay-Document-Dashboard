@@ -30,8 +30,29 @@ function rowsExcept(key){
 }
 function fillSelect(id, values, value){
   const el=$(id);
-  const opts=['<option value="">All</option>'].concat(values.sort((a,b)=>String(a).localeCompare(String(b),'th')).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`));
-  el.innerHTML=opts.join(""); el.value=value||"";
+  const sortedValues = [...values].sort((a,b)=>{
+  if(id==="area"){
+    const order = {
+      "BMA I - North West": 1,
+      "BMA II - South West": 2,
+      "BMA III - North East": 3,
+      "BMA IV - South East": 4,
+      "BMA V - Central": 5
+    };
+    const oa = order[String(a)];
+    const ob = order[String(b)];
+    if(oa && ob) return oa - ob;
+    if(oa) return -1;
+    if(ob) return 1;
+  }
+  return String(a).localeCompare(String(b),'th');
+});
+
+const opts=['<option value="">All</option>']
+  .concat(sortedValues.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`));
+
+el.innerHTML=opts.join("");
+el.value=value||"";
 }
 function refreshFilters(){
   fillSelect("month",uniq(rowsExcept("m").map(r=>r.m)),filters.m);
