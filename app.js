@@ -166,9 +166,31 @@ function rankBars(items, mode){
    <div class="rank-no">${idx+1}</div><div><div class="rank-name" title="${esc(x.name||x.sh)}">${esc(x.name||x.sh)}</div><div class="rank-bar"><i style="width:${((mode==="rate"?x.ir:x.i)/max*100).toFixed(1)}%"></i></div></div>
    <div class="rank-rate">${mode==="rate"?pct1(x.ir):fmt(x.i)}</div></div>`).join("")}</div>`;
 }
-function renderRegionRank(rows){
- const a=["BMA","UPC1","UPC2"].map(rr=>{const s=statusStats(rows.filter(r=>r.rr===rr));return {name:rr,ir:pct(s.incomplete,s.cases),i:s.incomplete,c:s.cases}}).filter(x=>x.c);
- a.sort((x,y)=>y.ir-x.ir); $("regionRank").innerHTML=rankBars(a,"rate");
+function renderAreaRank(rows){
+ const areas=uniq(rows.map(r=>r.ar)).map(ar=>{
+   const s=statusStats(rows.filter(r=>r.ar===ar));
+   return {name:ar,ir:pct(s.incomplete,s.cases),i:s.incomplete,c:s.cases};
+ }).filter(x=>x.c);
+
+ areas.sort((a,b)=>b.ir-a.ir || b.i-a.i);
+
+ const max=Math.max(...areas.map(x=>x.ir),1);
+
+ $("regionRank").innerHTML=`
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px">
+ ${areas.map((x,idx)=>`
+   <div class="rank-item">
+     <div class="rank-no">${idx+1}</div>
+     <div>
+       <div class="rank-name" title="${esc(x.name)}">${esc(x.name)}</div>
+       <div class="rank-bar">
+         <i style="width:${(x.ir/max*100).toFixed(1)}%"></i>
+       </div>
+     </div>
+     <div class="rank-rate">${pct1(x.ir)}</div>
+   </div>
+ `).join("")}
+ </div>`;
 }
 function renderShopTables(rows){
  const shops=groupShop(rows).filter(x=>x.c>=50);
@@ -277,7 +299,7 @@ function scopeLabel(){
 function renderAll(){
  const rows=currentRows();
  renderOverviewHighlight(rows);
- renderKpis(rows);renderRegionCards(rows);renderTrend(rows);renderRegionRank(rows);renderShopTables(rows);
+ renderKpis(rows);renderRegionCards(rows);renderTrend(rows);renderAreaRank(rows);renderShopTables(rows);
  $("scopeText").textContent=`${scopeLabel()} • ${fmt(rows.length)} cases`;
  $("footerCount").textContent=`Current scope: ${fmt(rows.length)} cases • W&W source total 41,596`;
  renderPeople(rows);renderRoot(rows);
