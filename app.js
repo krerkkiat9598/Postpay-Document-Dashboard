@@ -274,9 +274,29 @@ function renderRoot(rows){
  document.querySelectorAll(".reason-click").forEach(el=>el.addEventListener("click",()=>{selectedReason=el.dataset.reason;renderRoot(rows)}));
 
  const locationRows=selectedReason?categoryRows.filter(r=>r.reason===selectedReason):categoryRows;
- const lm=new Map();locationRows.forEach(r=>{const k=`${r.rr}|||${r.ar}|||${r.sh}`;if(!lm.has(k))lm.set(k,{rr:r.rr,ar:r.ar,sh:r.sh,c:0});lm.get(k).c++});
- const loc=[...lm.values()].sort((a,b)=>b.c-a.c).slice(0,30);
- $("rootLocation").innerHTML=loc.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Region</th><th>Area</th><th>Shop</th><th class="num">Case</th><th class="num">% of Selected Root</th></tr></thead><tbody>${loc.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.rr)}</td><td>${esc(x.ar)}</td><td>${esc(x.sh)}</td><td class="num bad">${fmt(x.c)}</td><td class="num">${pct1(pct(x.c,locationRows.length))}</td></tr>`).join("")}</tbody></table></div>`:"<div class='scope'>ไม่มีข้อมูล</div>";
+ const lm=new Map();
+ rows.forEach(r=>{
+   const k=`${r.rr}|||${r.ar}|||${r.sh}`;
+   if(!lm.has(k)) lm.set(k,{rr:r.rr,ar:r.ar,sh:r.sh,all:0,complete:0,incomplete:0,root:0});
+   const o=lm.get(k);
+   o.all++;
+   if(r.st==="สมบูรณ์") o.complete++; else o.incomplete++;
+ });
+ locationRows.forEach(r=>{
+   const k=`${r.rr}|||${r.ar}|||${r.sh}`;
+   if(!lm.has(k)) lm.set(k,{rr:r.rr,ar:r.ar,sh:r.sh,all:0,complete:0,incomplete:0,root:0});
+   lm.get(k).root++;
+ });
+ const loc=[...lm.values()].filter(x=>x.root>0).sort((a,b)=>b.root-a.root||b.incomplete-a.incomplete||b.all-a.all).slice(0,30);
+ const rootRowsHtml=loc.map((x,i)=>{
+   const ach=pct(x.complete,x.all);
+   const rootShare=pct(x.root,locationRows.length);
+   const achClass=ach>=95?'good':ach>=90?'warn':'bad';
+   return `<tr><td>${i+1}</td><td>${esc(x.rr)}</td><td>${esc(x.ar)}</td><td>${esc(x.sh)}</td><td class="num">${fmt(x.all)}</td><td class="num good">${fmt(x.complete)}</td><td class="num bad">${fmt(x.incomplete)}</td><td class="num ${achClass}">${pct1(ach)}</td><td class="num">${pct1(rootShare)}</td></tr>`;
+ }).join("");
+ const rootHeader='<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Region</th><th>Area</th><th>Shop</th><th class="num">All Document</th><th class="num">Complete</th><th class="num">Incomplete</th><th class="num">% Ach Document Complete</th><th class="num">% Selected Root</th></tr></thead><tbody>';
+ const rootFooter='</tbody></table></div>';
+ $("rootLocation").innerHTML=loc.length?rootHeader+rootRowsHtml+rootFooter:"<div class='scope'>ไม่มีข้อมูล</div>";
 
  const topCat=Object.entries(categoryRows.reduce((m,r)=>{const k=r.cat||"ไม่ระบุ";m[k]=(m[k]||0)+1;return m},{})).sort((a,b)=>b[1]-a[1])[0];
  const topReason=Object.entries((selectedReason?locationRows:categoryRows).reduce((m,r)=>{const k=r.reason&&r.reason!=="ไม่ระบุ"?r.reason:"ไม่ระบุ";m[k]=(m[k]||0)+1;return m},{})).sort((a,b)=>b[1]-a[1])[0];
