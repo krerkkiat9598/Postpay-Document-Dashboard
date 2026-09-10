@@ -301,7 +301,7 @@ function renderAll(){
  renderOverviewHighlight(rows);
  renderKpis(rows);renderRegionCards(rows);renderTrend(rows);renderAreaRank(rows);renderShopTables(rows);
  $("scopeText").textContent=`${scopeLabel()} • ${fmt(rows.length)} cases`;
- $("footerCount").textContent=`Current scope: ${fmt(rows.length)} cases • W&W source total 41,596`;
+ $("footerCount").textContent=`Current scope: ${fmt(rows.length)} cases • W&W source total ${fmt(DATA.length)}`;
  renderPeople(rows);renderRoot(rows);
 }
 $("rootCat").addEventListener("change",()=>{selectedReason="";renderRoot(currentRows())});
