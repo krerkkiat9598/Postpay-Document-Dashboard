@@ -10,6 +10,32 @@ const pct = (n,d) => d ? (n/d*100) : 0;
 const fmt = n => Number(n||0).toLocaleString("en-US");
 const pct1 = n => `${Number(n||0).toFixed(1)}%`;
 const esc = s => String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+function parseSourceDate(v){
+  if(v===null || v===undefined || v==="") return null;
+  const s=String(v).trim();
+  const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
+  const d=new Date(s);
+  return Number.isNaN(d.getTime())?null:new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+}
+function formatDateShort(d){
+  return d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+}
+function sourceDateRange(){
+  const dates=DATA.map(r=>parseSourceDate(r.od)).filter(Boolean).sort((a,b)=>a-b);
+  if(!dates.length) return "";
+  const first=dates[0], last=dates[dates.length-1];
+  const sameYear=first.getUTCFullYear()===last.getUTCFullYear();
+  const firstText=sameYear?first.toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"}):formatDateShort(first);
+  return `${firstText} – ${formatDateShort(last)}`;
+}
+function updateHeroDate(){
+  const el=document.querySelector(".hero-sub");
+  if(!el) return;
+  const range=sourceDateRange();
+  el.textContent=range?`ผลการตรวจเอกสาร Postpay | ${range} | Source: DPS RAW DATA`:`ผลการตรวจเอกสาร Postpay | Source: DPS RAW DATA`;
+}
 const isUnassigned = r => !r.emp || String(r.emp).trim()==="" || String(r.emp).trim()==="ไม่ระบุ";
 const statusStats = rows => ({
   cases: rows.length,
@@ -325,4 +351,4 @@ function renderAll(){
  renderPeople(rows);renderRoot(rows);
 }
 $("rootCat").addEventListener("change",()=>{selectedReason="";renderRoot(currentRows())});
-refreshFilters();renderAll();
+updateHeroDate(); refreshFilters();renderAll();
