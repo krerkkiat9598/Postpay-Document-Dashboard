@@ -23,7 +23,7 @@ function formatDateShort(d){
   return d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
 }
 function sourceDateRange(){
-  const dates=DATA.map(r=>parseSourceDate(r.od)).filter(Boolean).sort((a,b)=>a-b);
+  const dates=DATA.map(r=>parseSourceDate(r.d)).filter(Boolean).sort((a,b)=>a-b);
   if(!dates.length) return "";
   const first=dates[0], last=dates[dates.length-1];
   const sameYear=first.getUTCFullYear()===last.getUTCFullYear();
