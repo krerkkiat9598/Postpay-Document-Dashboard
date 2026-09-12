@@ -1,0 +1,66 @@
+name: Update Postpay Dashboard Data
+
+on:
+  push:
+    paths:
+      - 'data/DPS_RAW.xlsb'
+      - 'data/DPS_RAW.xlsx'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pandas openpyxl pyxlsb
+
+      - name: Find RAW Excel
+        id: raw
+        shell: bash
+        run: |
+          if [ -f data/DPS_RAW.xlsb ]; then
+            echo "file=data/DPS_RAW.xlsb" >> "$GITHUB_OUTPUT"
+          elif [ -f data/DPS_RAW.xlsx ]; then
+            echo "file=data/DPS_RAW.xlsx" >> "$GITHUB_OUTPUT"
+          else
+            echo "RAW Excel not found"
+            exit 1
+          fi
+
+      - name: Convert Excel to data.js
+        env:
+          RAW_FILE: ${{ steps.raw.outputs.file }}
+        run: |
+          python scripts/excel_to_datajs.py "$RAW_FILE" data.js
+
+      - name: Validate
+        run: |
+          python scripts/validate_data.py data.js
+
+      - name: Commit data.js
+        run: |
+          if git diff --quiet -- data.js; then
+            echo "No changes in data.js"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data.js
+          git commit -m "Auto-update Postpay dashboard data"
+          git push
