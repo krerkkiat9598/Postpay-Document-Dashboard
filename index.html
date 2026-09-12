@@ -15,7 +15,7 @@
   <div class="hero-grid"></div>
   <div class="brand">WIRE & WIRELESS <span>•</span> POSTPAY</div>
   <div class="hero-title">Document Quality Dashboard</div>
-  <div class="hero-sub">ผลการตรวจเอกสาร Postpay | 1 Jul – 25 Aug 2026 | Source: DPS RAW DATA</div>
+  <div class="hero-sub" id="heroSub">ผลการตรวจเอกสาร Postpay | กำลังโหลดวันที่... | Source: DPS RAW DATA</div>
   <div class="hero-badge">EXECUTIVE<br><small>CONTROL TOWER</small></div>
 </header>
 
@@ -41,7 +41,6 @@
   <div id="overviewHighlight" class="highlight-panel"></div>
   <div class="kpis" id="kpis"></div>
   <div class="region-grid" id="regionCards"></div>
-
   <div class="two-col">
     <div class="panel">
       <div class="panel-title"><span>QUALITY TREND</span><small>Complete / Incomplete / X Flag</small></div>
@@ -52,7 +51,6 @@
       <div id="regionRank"></div>
     </div>
   </div>
-
   <div class="two-col">
     <div class="panel">
       <div class="panel-title"><span>TOP PERFORMANCE SHOPS</span><small>ขั้นต่ำ 50 Cases • Complete Rate สูงสุด</small></div>
@@ -114,5 +112,25 @@
 </div>
 <script src="data.js"></script>
 <script src="app.js"></script>
+<script>
+(function(){
+  const rows = window.POSTPAY_DATA || [];
+  const dates = rows.map(r => r.d).filter(Boolean).sort();
+  const el = document.getElementById('heroSub');
+  if (!dates.length) {
+    el.textContent = 'ผลการตรวจเอกสาร Postpay | ไม่พบ Order Date | Source: DPS RAW DATA';
+    return;
+  }
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmt = s => {
+    const [y,m,d] = s.split('-').map(Number);
+    return `${d} ${months[m-1]} ${y}`;
+  };
+  const label = dates[0] === dates[dates.length-1]
+    ? fmt(dates[0])
+    : `${fmt(dates[0])} – ${fmt(dates[dates.length-1])}`;
+  el.textContent = `ผลการตรวจเอกสาร Postpay | ${label} | Source: DPS RAW DATA`;
+})();
+</script>
 </body>
 </html>
