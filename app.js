@@ -176,7 +176,14 @@ function renderTrend(rows){
    (!filters.rr || r.rr===filters.rr) && (!filters.ar || r.ar===filters.ar) &&
    (!filters.ch || r.ch===filters.ch) && (!filters.ot || r.ot===filters.ot) && (!filters.sh || r.sh===filters.sh)
  );
- const months=["July'26","Aug'26"].filter(m=>trendRows.some(r=>r.m===m));
+ const months=uniq(trendRows.map(r=>r.m)).filter(Boolean).sort((a,b)=>{
+  const idx={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const parse=m=>{
+    const z=String(m).match(/^([A-Za-z]+)'(\d{2})$/);
+    return z ? (2000+Number(z[2]))*12+(idx[z[1]]??99) : 999999;
+  };
+  return parse(a)-parse(b);
+});
  $("trend").innerHTML=months.map(m=>{
    const s=statusStats(trendRows.filter(r=>r.m===m)), c=pct(s.complete,s.cases), i=pct(s.incomplete,s.cases), x=pct(s.xflag,s.cases);
    const hi=filters.m===m?' style="padding:8px;border:1px solid #8fc7f3;border-radius:10px;background:#f4faff"':'';
